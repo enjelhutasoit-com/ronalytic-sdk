@@ -24,6 +24,10 @@ let package = Package(
         .testTarget(
             name: "RonalyticCoreTests",
             dependencies: ["RonalyticCore", "RonalyticTestSupport"]
+        ),
+        .testTarget(
+            name: "RonalyticTestSupportTests",
+            dependencies: ["RonalyticCore", "RonalyticTestSupport"]
         )
     ]
 )
