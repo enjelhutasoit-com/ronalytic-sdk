@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "RonalyticLifecycle", targets: ["RonalyticLifecycle"]),
         .library(name: "RonalyticFileStorage", targets: ["RonalyticFileStorage"]),
         .library(name: "RonalyticHTTP", targets: ["RonalyticHTTP"]),
-        .library(name: "RonalyticTestSupport", targets: ["RonalyticTestSupport"]),
+        .library(name: "RonalyticTestSupport", targets: ["RonalyticTestSupport"])
     ],
     targets: [
         .target(name: "RonalyticCore"),
@@ -24,7 +24,6 @@ let package = Package(
         .testTarget(
             name: "RonalyticCoreTests",
             dependencies: ["RonalyticCore", "RonalyticTestSupport"]
-        ),
+        )
     ]
 )
-
