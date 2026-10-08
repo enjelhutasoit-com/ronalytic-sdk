@@ -38,7 +38,7 @@ jobs:
       - name: Build and test on iOS simulator
         run: |
           xcodebuild test \
-            -scheme ronalytic-sdk-Package \
+            -scheme Ronalytic-Package\
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
