@@ -24,7 +24,7 @@ final class BoundedQueueStorageTests: XCTestCase {
         try await queue.append([.fixture(id: "c")])
         let ids = try await storedIDs(queue)
         let dropped = await queue.droppedCount
-        
+
         XCTAssertEqual(ids, ["a", "b"])
         XCTAssertEqual(dropped, 1)
     }
@@ -35,7 +35,7 @@ final class BoundedQueueStorageTests: XCTestCase {
         try await queue.append([.fixture(id: "c"), .fixture(id: "d"), .fixture(id: "e")])
         let ids = try await storedIDs(queue)
         let dropped = await queue.droppedCount
-        
+
         XCTAssertEqual(ids, ["a", "b", "c"])
         XCTAssertEqual(dropped, 2)
     }
@@ -46,7 +46,7 @@ final class BoundedQueueStorageTests: XCTestCase {
         try await queue.append([.fixture(id: "c")])
         let ids = try await storedIDs(queue)
         let dropped = await queue.droppedCount
-        
+
         XCTAssertEqual(ids, ["b", "c"])
         XCTAssertEqual(dropped, 1)
     }
@@ -56,7 +56,7 @@ final class BoundedQueueStorageTests: XCTestCase {
         try await queue.append([.fixture(id: "a"), .fixture(id: "b"), .fixture(id: "c"), .fixture(id: "d")])
         let ids = try await storedIDs(queue)
         let dropped = await queue.droppedCount
-        
+
         XCTAssertEqual(ids, ["c", "d"])
         XCTAssertEqual(dropped, 2)
     }
@@ -67,7 +67,7 @@ final class BoundedQueueStorageTests: XCTestCase {
         try await queue.append([.fixture(id: "b")])
         try await queue.append([.fixture(id: "c")])
         let dropped = await queue.droppedCount
-        
+
         XCTAssertEqual(dropped, 2)
     }
 
