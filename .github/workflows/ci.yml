@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Lint
+        run: swiftlint --strict
+
+  test:
+    runs-on: macos-15
+    env:
+      COVERAGE_MIN: "0"   # raise once we agree on a threshold
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: .spm
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+
+      - name: Build and test on iOS simulator
+        run: |
+          xcodebuild test \
+            -scheme ronalytic-sdk-Package \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult \
+            -clonedSourcePackagesDirPath .spm
+
+      - name: Enforce coverage threshold
+        run: |
+          COV=$(xcrun xccov view --report --json TestResults.xcresult | jq '.lineCoverage * 100')
+          echo "Line coverage: ${COV}% (minimum ${COVERAGE_MIN}%)"
+          awk -v c="$COV" -v m="$COVERAGE_MIN" 'BEGIN { exit (c+0 < m+0) }'
