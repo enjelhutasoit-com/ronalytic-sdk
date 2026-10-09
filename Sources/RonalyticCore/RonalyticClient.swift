@@ -19,6 +19,7 @@ public final class RonalyticClient: Sendable {
         idGenerator: any IDGenerator = UUIDGenerator(),
         transport: (any Transport)? = nil,
         batchSize: Int = 50,
+        backoff: BackoffPolicy = .default,
         flushInterval: Duration? = nil,
         queueCapacity: Int = 1_000,
         dropPolicy: DropPolicy = .dropOldest
@@ -32,7 +33,9 @@ public final class RonalyticClient: Sendable {
             Flusher(
                 storage: bounded,
                 transport: $0,
-                batchSize: batchSize
+                batchSize: batchSize,
+                backoff: backoff,
+                clock: clock
             )
         }
         let processor = EventProcessor(

@@ -7,21 +7,47 @@ actor Flusher {
     private let storage: any QueueStorage
     private let transport: any Transport
     private let batchSize: Int
+    private let backoff: BackoffPolicy
+    private let clock: any SDKClock
+    private let jitter: any JitterSource
 
     init(
         storage: any QueueStorage,
         transport: any Transport,
-        batchSize: Int
+        batchSize: Int,
+        backoff: BackoffPolicy = .default,
+        clock: any SDKClock = SystemClock(),
+        jitter: any JitterSource = SystemJitter()
     ) {
         self.storage = storage
         self.transport = transport
         self.batchSize = max(batchSize, 1)
+        self.backoff = backoff
+        self.clock = clock
+        self.jitter = jitter
     }
 
-    /// Sends batches until the queue is empty or a batch is not fully finished.
+    /// Sends batches until the queue is empty or the retries are used up.
+    /// Unsent events stay stored for a later flush.
     func flush() async {
+        var failures = 0
         while let batch = try? await storage.peek(limit: batchSize), !batch.isEmpty {
-            guard await deliver(batch) else { return }
+            if await deliver(batch) {
+                failures = 0
+                continue
+            }
+            guard failures < backoff.maxRetries else { return }
+
+            let wait = backoff.delay(
+                forRetry: failures,
+                jitter: jitter.nextUnit()
+            )
+            failures += 1
+            do {
+                try await clock.sleep(for: .seconds(wait))
+            } catch {
+                return   // cancelled
+            }
         }
     }
 

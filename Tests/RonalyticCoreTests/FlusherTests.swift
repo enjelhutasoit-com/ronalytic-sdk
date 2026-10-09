@@ -10,8 +10,16 @@ final class FlusherTests: XCTestCase {
 
     private let storage = InMemoryQueueStorage()
 
-    private func makeFlusher(transport: FakeTransport, batchSize: Int = 50) -> Flusher {
-        Flusher(storage: storage, transport: transport, batchSize: batchSize)
+    private func makeFlusher(
+        transport: FakeTransport,
+        batchSize: Int = 50
+    ) -> Flusher {
+        Flusher(
+            storage: storage,
+            transport: transport,
+            batchSize: batchSize,
+            backoff: .noRetry
+        )
     }
 
     private func store(_ ids: String...) async throws {
