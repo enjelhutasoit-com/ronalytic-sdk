@@ -16,6 +16,8 @@ public final class RonalyticClient: Sendable {
         plugins: [any Plugin] = [],
         clock: any SDKClock = SystemClock(),
         idGenerator: any IDGenerator = UUIDGenerator(),
+        transport: (any Transport)? = nil,
+        batchSize: Int = 50,
         queueCapacity: Int = 1_000,
         dropPolicy: DropPolicy = .dropOldest
     ) {
@@ -24,7 +26,18 @@ public final class RonalyticClient: Sendable {
         self.sessionID = idGenerator.makeID()   // temporary, real sessions come later
 
         let bounded = BoundedQueueStorage(base: storage, capacity: queueCapacity, policy: dropPolicy)
-        let processor = EventProcessor(pipeline: Pipeline(plugins: plugins), storage: bounded)
+        let flusher = transport.map {
+            Flusher(
+                storage: bounded,
+                transport: $0,
+                batchSize: batchSize
+            )
+        }
+        let processor = EventProcessor(
+            pipeline: Pipeline(plugins: plugins),
+            storage: bounded,
+            flusher: flusher
+        )
         let (stream, continuation) = AsyncStream.makeStream(of: ClientCommand.self)
         self.continuation = continuation
 
@@ -37,6 +50,11 @@ public final class RonalyticClient: Sendable {
 
     deinit {
         continuation.finish()
+    }
+
+    /// Asks the SDK to send stored events. Returns immediately.
+    public func flush() {
+        continuation.yield(.flush)
     }
 
     public func track(
