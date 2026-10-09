@@ -53,4 +53,18 @@ final class RonalyticClientFlushTests: XCTestCase {
         let count = try await storage.count()
         XCTAssertEqual(count, 1)
     }
+
+    func test_flush_retriesAfterATemporaryFailure() async throws {
+        let transport = FakeTransport(responses: [.throwError])
+        let client = makeClient(transport: transport)
+
+        client.track("a")
+        client.flush()
+        await client.waitUntilIdle()
+        let batches = await transport.sentBatches
+        let count = try await storage.count()
+
+        XCTAssertEqual(batches.count, 2)
+        XCTAssertEqual(count, 0)
+    }
 }
