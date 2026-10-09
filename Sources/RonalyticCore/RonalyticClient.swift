@@ -66,9 +66,18 @@ public final class RonalyticClient: Sendable {
 
     /// Creates a client from a configuration.
     public convenience init(config: RonalyticConfig) {
+        var plugins = config.plugins
+        if config.collectContext {
+            // First in the list, so every later plugin (destinations) sees the context.
+            let enricher = ContextEnricher(
+                contextProvider: config.contextProvider,
+                networkStateProvider: config.networkStateProvider
+            )
+            plugins.insert(enricher, at: 0)
+        }
         self.init(
             storage: config.storage,
-            plugins: config.plugins,
+            plugins: plugins,
             clock: config.clock,
             idGenerator: config.idGenerator,
             transport: config.transport,
