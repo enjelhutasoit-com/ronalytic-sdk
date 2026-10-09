@@ -58,4 +58,10 @@ final class RonalyticConfigTests: XCTestCase {
 
         XCTAssertEqual(config.sessionTimeout, 1_800)
     }
+
+    func test_collectContextDefaultsToTrue() {
+        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+
+        XCTAssertTrue(config.collectContext)
+    }
 }

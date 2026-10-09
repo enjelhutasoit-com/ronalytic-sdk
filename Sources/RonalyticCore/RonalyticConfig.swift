@@ -24,6 +24,12 @@ public struct RonalyticConfig: Sendable {
     public var dropPolicy: DropPolicy
     /// Seconds of inactivity after which a new session starts.
     public var sessionTimeout: TimeInterval
+    /// Adds device, app and network facts to every event. On by default.
+    public var collectContext: Bool
+    /// Source of device and app facts. Replace in tests.
+    public var contextProvider: any ContextProvider
+    /// Source of network state. Replace to report real connectivity.
+    public var networkStateProvider: any NetworkStateProvider
     /// Source of time. Replace in tests.
     public var clock: any SDKClock
     /// Source of event IDs. Replace in tests.
@@ -39,6 +45,9 @@ public struct RonalyticConfig: Sendable {
         queueCapacity: Int = 1_000,
         dropPolicy: DropPolicy = .dropOldest,
         sessionTimeout: TimeInterval = 1_800,
+        collectContext: Bool = true,
+        contextProvider: any ContextProvider = SystemContextProvider(),
+        networkStateProvider: any NetworkStateProvider = UnknownNetworkStateProvider(),
         clock: any SDKClock = SystemClock(),
         idGenerator: any IDGenerator = UUIDGenerator()
     ) {
@@ -51,6 +60,9 @@ public struct RonalyticConfig: Sendable {
         self.queueCapacity = queueCapacity
         self.dropPolicy = dropPolicy
         self.sessionTimeout = sessionTimeout
+        self.collectContext = collectContext
+        self.contextProvider = contextProvider
+        self.networkStateProvider = networkStateProvider
         self.clock = clock
         self.idGenerator = idGenerator
     }
