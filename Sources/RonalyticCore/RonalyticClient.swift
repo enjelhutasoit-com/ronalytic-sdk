@@ -10,6 +10,7 @@ public final class RonalyticClient: Sendable {
     private let clock: any SDKClock
     private let idGenerator: any IDGenerator
     private let sessionID: String
+    private let timerTask: Task<Void, Never>?
 
     public init(
         storage: any QueueStorage,
@@ -18,6 +19,7 @@ public final class RonalyticClient: Sendable {
         idGenerator: any IDGenerator = UUIDGenerator(),
         transport: (any Transport)? = nil,
         batchSize: Int = 50,
+        flushInterval: Duration? = nil,
         queueCapacity: Int = 1_000,
         dropPolicy: DropPolicy = .dropOldest
     ) {
@@ -36,10 +38,21 @@ public final class RonalyticClient: Sendable {
         let processor = EventProcessor(
             pipeline: Pipeline(plugins: plugins),
             storage: bounded,
-            flusher: flusher
+            flusher: flusher,
+            flushThreshold: batchSize
         )
         let (stream, continuation) = AsyncStream.makeStream(of: ClientCommand.self)
         self.continuation = continuation
+
+        if let flushInterval, flusher != nil {
+            self.timerTask = Task {
+                await FlushTimer.run(every: flushInterval, clock: clock) {
+                    continuation.yield(.flush)
+                }
+            }
+        } else {
+            self.timerTask = nil
+        }
 
         Task {
             for await command in stream {
@@ -49,6 +62,7 @@ public final class RonalyticClient: Sendable {
     }
 
     deinit {
+        timerTask?.cancel()
         continuation.finish()
     }
 
