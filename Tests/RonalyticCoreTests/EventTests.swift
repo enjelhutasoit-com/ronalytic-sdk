@@ -38,6 +38,22 @@ final class EventTests: XCTestCase {
         XCTAssertThrowsError(try JSONDecoder().decode([String: PropertyValue].self, from: data))
     }
 
+    func test_contextDefaultsToEmpty() {
+        let event = makeTestEvent()
+
+        XCTAssertTrue(event.context.isEmpty)
+    }
+
+    func test_contextRoundTripsThroughJSON() throws {
+        var event = makeTestEvent()
+        event.context = ["os.name": "iOS", "app.build": "45"]
+
+        let data = try JSONEncoder().encode(event)
+        let decoded = try JSONDecoder().decode(Event.self, from: data)
+
+        XCTAssertEqual(decoded.context, event.context)
+    }
+
     // MARK: - Helpers
 
     private func makeEvent() -> Event {
