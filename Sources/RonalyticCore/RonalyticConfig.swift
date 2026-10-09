@@ -1,0 +1,51 @@
+//
+// Copyright (c) 2026 Enjel Hutasoit
+//
+
+/// Every setting of the SDK in one place. Build it once at launch.
+public struct RonalyticConfig: Sendable {
+    /// Where events wait before they are sent. Required.
+    public var storage: any QueueStorage
+    /// Sends batches to a backend. Without one, events stay stored.
+    public var transport: (any Transport)?
+    /// Runs in order for every event: enrichers, filters, destinations.
+    public var plugins: [any Plugin]
+    /// Events per upload. Also the size that triggers an automatic flush.
+    public var batchSize: Int
+    /// How often to flush a half-full queue. nil turns the timer off.
+    public var flushInterval: Duration?
+    /// Waiting and retry rules after a failed upload.
+    public var backoff: BackoffPolicy
+    /// Maximum events kept in the queue.
+    public var queueCapacity: Int
+    /// What to discard when the queue is full.
+    public var dropPolicy: DropPolicy
+    /// Source of time. Replace in tests.
+    public var clock: any SDKClock
+    /// Source of event IDs. Replace in tests.
+    public var idGenerator: any IDGenerator
+
+    public init(
+        storage: any QueueStorage,
+        transport: (any Transport)? = nil,
+        plugins: [any Plugin] = [],
+        batchSize: Int = 50,
+        flushInterval: Duration? = .seconds(30),
+        backoff: BackoffPolicy = .default,
+        queueCapacity: Int = 1_000,
+        dropPolicy: DropPolicy = .dropOldest,
+        clock: any SDKClock = SystemClock(),
+        idGenerator: any IDGenerator = UUIDGenerator()
+    ) {
+        self.storage = storage
+        self.transport = transport
+        self.plugins = plugins
+        self.batchSize = batchSize
+        self.flushInterval = flushInterval
+        self.backoff = backoff
+        self.queueCapacity = queueCapacity
+        self.dropPolicy = dropPolicy
+        self.clock = clock
+        self.idGenerator = idGenerator
+    }
+}
