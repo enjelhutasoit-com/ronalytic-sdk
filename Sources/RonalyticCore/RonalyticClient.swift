@@ -9,7 +9,7 @@ public final class RonalyticClient: Sendable {
     private let continuation: AsyncStream<ClientCommand>.Continuation
     private let clock: any SDKClock
     private let idGenerator: any IDGenerator
-    private let sessionID: String
+    private let sessionTracker: SessionTracker
     private let timerTask: Task<Void, Never>?
 
     init(
@@ -22,12 +22,12 @@ public final class RonalyticClient: Sendable {
         backoff: BackoffPolicy = .default,
         flushInterval: Duration? = nil,
         queueCapacity: Int = 1_000,
-        dropPolicy: DropPolicy = .dropOldest
+        dropPolicy: DropPolicy = .dropOldest,
+        sessionTimeout: TimeInterval = 1_800
     ) {
         self.clock = clock
         self.idGenerator = idGenerator
-        self.sessionID = idGenerator.makeID()   // temporary, real sessions come later
-
+        self.sessionTracker = SessionTracker(timeout: sessionTimeout, idGenerator: idGenerator)
         let bounded = BoundedQueueStorage(base: storage, capacity: queueCapacity, policy: dropPolicy)
         let flusher = transport.map {
             Flusher(
@@ -76,7 +76,8 @@ public final class RonalyticClient: Sendable {
             backoff: config.backoff,
             flushInterval: config.flushInterval,
             queueCapacity: config.queueCapacity,
-            dropPolicy: config.dropPolicy
+            dropPolicy: config.dropPolicy,
+            sessionTimeout: config.sessionTimeout
         )
     }
 
@@ -124,7 +125,9 @@ public final class RonalyticClient: Sendable {
         type: EventType,
         properties: [String: PropertyValue]
     ) -> EventDraft {
-        EventDraft(
+        let now = clock.now()
+        let sessionID = sessionTracker.sessionID(at: now)
+        return EventDraft(
             id: idGenerator.makeID(),
             name: name,
             type: type,
