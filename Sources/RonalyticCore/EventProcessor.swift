@@ -28,16 +28,19 @@ actor EventProcessor {
     private let pipeline: Pipeline
     private let storage: any QueueStorage
     private let flusher: Flusher?
+    private let flushThreshold: Int
     private var userID: String?
 
     init(
         pipeline: Pipeline,
         storage: any QueueStorage,
-        flusher: Flusher?
+        flusher: Flusher?,
+        flushThreshold: Int
     ) {
         self.pipeline = pipeline
         self.storage = storage
         self.flusher = flusher
+        self.flushThreshold = max(flushThreshold, 1)
     }
 
     func handle(_ command: ClientCommand) async {
@@ -68,5 +71,13 @@ actor EventProcessor {
         // Errors are swallowed on purpose for now: call sites never throw.
         // The metrics commit will count these failures.
         try? await storage.append([processed])
+        await flushIfThresholdReached()
+    }
+
+    private func flushIfThresholdReached() async {
+        guard let flusher,
+              let stored = try? await storage.count(),
+              stored >= flushThreshold else { return }
+        await flusher.flush()
     }
 }
