@@ -18,6 +18,7 @@ struct EventDraft: Sendable {
 enum ClientCommand: Sendable {
     case event(EventDraft)
     case identify(userID: String, draft: EventDraft)
+    case flush
     /// Resumed once every earlier command is finished. Used by tests.
     case barrier(CheckedContinuation<Void, Never>)
 }
@@ -26,11 +27,17 @@ enum ClientCommand: Sendable {
 actor EventProcessor {
     private let pipeline: Pipeline
     private let storage: any QueueStorage
+    private let flusher: Flusher?
     private var userID: String?
 
-    init(pipeline: Pipeline, storage: any QueueStorage) {
+    init(
+        pipeline: Pipeline,
+        storage: any QueueStorage,
+        flusher: Flusher?
+    ) {
         self.pipeline = pipeline
         self.storage = storage
+        self.flusher = flusher
     }
 
     func handle(_ command: ClientCommand) async {
@@ -40,6 +47,8 @@ actor EventProcessor {
         case .identify(let newUserID, let draft):
             userID = newUserID
             await store(draft)
+        case .flush:
+            await flusher?.flush()
         case .barrier(let continuation):
             continuation.resume()
         }
