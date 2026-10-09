@@ -12,7 +12,7 @@ public final class RonalyticClient: Sendable {
     private let sessionID: String
     private let timerTask: Task<Void, Never>?
 
-    public init(
+    init(
         storage: any QueueStorage,
         plugins: [any Plugin] = [],
         clock: any SDKClock = SystemClock(),
@@ -62,6 +62,22 @@ public final class RonalyticClient: Sendable {
                 await processor.handle(command)
             }
         }
+    }
+
+    /// Creates a client from a configuration.
+    public convenience init(config: RonalyticConfig) {
+        self.init(
+            storage: config.storage,
+            plugins: config.plugins,
+            clock: config.clock,
+            idGenerator: config.idGenerator,
+            transport: config.transport,
+            batchSize: config.batchSize,
+            backoff: config.backoff,
+            flushInterval: config.flushInterval,
+            queueCapacity: config.queueCapacity,
+            dropPolicy: config.dropPolicy
+        )
     }
 
     deinit {
