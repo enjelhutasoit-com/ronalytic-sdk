@@ -2,6 +2,8 @@
 // Copyright (c) 2026 Enjel Hutasoit
 //
 
+import Foundation
+
 /// Every setting of the SDK in one place. Build it once at launch.
 public struct RonalyticConfig: Sendable {
     /// Where events wait before they are sent. Required.
@@ -20,6 +22,8 @@ public struct RonalyticConfig: Sendable {
     public var queueCapacity: Int
     /// What to discard when the queue is full.
     public var dropPolicy: DropPolicy
+    /// Seconds of inactivity after which a new session starts.
+    public var sessionTimeout: TimeInterval
     /// Source of time. Replace in tests.
     public var clock: any SDKClock
     /// Source of event IDs. Replace in tests.
@@ -34,6 +38,7 @@ public struct RonalyticConfig: Sendable {
         backoff: BackoffPolicy = .default,
         queueCapacity: Int = 1_000,
         dropPolicy: DropPolicy = .dropOldest,
+        sessionTimeout: TimeInterval = 1_800,
         clock: any SDKClock = SystemClock(),
         idGenerator: any IDGenerator = UUIDGenerator()
     ) {
@@ -45,6 +50,7 @@ public struct RonalyticConfig: Sendable {
         self.backoff = backoff
         self.queueCapacity = queueCapacity
         self.dropPolicy = dropPolicy
+        self.sessionTimeout = sessionTimeout
         self.clock = clock
         self.idGenerator = idGenerator
     }

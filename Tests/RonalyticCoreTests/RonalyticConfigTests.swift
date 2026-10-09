@@ -52,4 +52,10 @@ final class RonalyticConfigTests: XCTestCase {
 
         XCTAssertNil(config.flushInterval)
     }
+
+    func test_sessionTimeoutDefaultsToThirtyMinutes() {
+        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+
+        XCTAssertEqual(config.sessionTimeout, 1_800)
+    }
 }
