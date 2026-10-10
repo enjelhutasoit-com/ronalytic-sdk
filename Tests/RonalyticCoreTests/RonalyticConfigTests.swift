@@ -64,4 +64,16 @@ final class RonalyticConfigTests: XCTestCase {
 
         XCTAssertTrue(config.collectContext)
     }
+
+    func test_consentProviderDefaultsToNil() {
+        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+
+        XCTAssertNil(config.consentProvider)
+    }
+
+    func test_unknownConsentIsNotAllowedByDefault() {
+        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+
+        XCTAssertFalse(config.allowWhenConsentUnknown)
+    }
 }

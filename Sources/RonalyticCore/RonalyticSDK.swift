@@ -31,6 +31,14 @@ public enum RonalyticSDK {
         holder.current?.flush()
     }
 
+    public static func optOut() {
+        holder.current?.optOut()
+    }
+
+    public static func optIn() {
+        holder.current?.optIn()
+    }
+
     // MARK: - Internal, for tests
 
     static var client: RonalyticClient? { holder.current }

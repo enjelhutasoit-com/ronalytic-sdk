@@ -78,6 +78,33 @@ final class RonalyticSDKTests: XCTestCase {
         XCTAssertEqual(batches.map { $0.map(\.name) }, [["a"]])
     }
 
+    func test_optOutAndOptInBeforeConfigure_doNotCrash() {
+        RonalyticSDK.optOut()
+        RonalyticSDK.optIn()
+
+        XCTAssertNil(RonalyticSDK.client)
+    }
+
+    func test_optOut_stopsTracking() async throws {
+        let storage = InMemoryQueueStorage()
+        RonalyticSDK.configure(
+            RonalyticConfig(
+                storage: storage,
+                flushInterval: nil,
+                optOutStore: InMemoryOptOutStore(),
+                clock: FakeClock(),
+                idGenerator: SequentialIDGenerator()
+            )
+        )
+
+        RonalyticSDK.optOut()
+        RonalyticSDK.track("a")
+        await RonalyticSDK.client?.waitUntilIdle()
+        let count = try await storage.count()
+
+        XCTAssertEqual(count, 0)
+    }
+
     // MARK: - Helper
 
     private func makeConfig(

@@ -11,6 +11,7 @@ public final class RonalyticClient: Sendable {
     private let idGenerator: any IDGenerator
     private let sessionTracker: SessionTracker
     private let timerTask: Task<Void, Never>?
+    private let optOutStore: any OptOutStore
 
     init(
         storage: any QueueStorage,
@@ -23,8 +24,10 @@ public final class RonalyticClient: Sendable {
         flushInterval: Duration? = nil,
         queueCapacity: Int = 1_000,
         dropPolicy: DropPolicy = .dropOldest,
-        sessionTimeout: TimeInterval = 1_800
+        sessionTimeout: TimeInterval = 1_800,
+        optOutStore: any OptOutStore = InMemoryOptOutStore()
     ) {
+        self.optOutStore = optOutStore
         self.clock = clock
         self.idGenerator = idGenerator
         self.sessionTracker = SessionTracker(timeout: sessionTimeout, idGenerator: idGenerator)
@@ -75,6 +78,11 @@ public final class RonalyticClient: Sendable {
             )
             plugins.insert(enricher, at: 0)
         }
+        if let consent = config.consentProvider {
+            // First of all, so denied events cost nothing and never reach a destination.
+            let gate = ConsentGate(provider: consent, allowWhenUnknown: config.allowWhenConsentUnknown)
+            plugins.insert(gate, at: 0)
+        }
         self.init(
             storage: config.storage,
             plugins: plugins,
@@ -86,7 +94,8 @@ public final class RonalyticClient: Sendable {
             flushInterval: config.flushInterval,
             queueCapacity: config.queueCapacity,
             dropPolicy: config.dropPolicy,
-            sessionTimeout: config.sessionTimeout
+            sessionTimeout: config.sessionTimeout,
+            optOutStore: config.optOutStore
         )
     }
 
@@ -104,6 +113,7 @@ public final class RonalyticClient: Sendable {
         _ name: String,
         properties: [String: PropertyValue] = [:]
     ) {
+        guard !optOutStore.isOptedOut() else { return }
         continuation.yield(.event(makeDraft(name: name, type: .track, properties: properties)))
     }
 
@@ -111,6 +121,7 @@ public final class RonalyticClient: Sendable {
         _ name: String,
         properties: [String: PropertyValue] = [:]
     ) {
+        guard !optOutStore.isOptedOut() else { return }
         continuation.yield(.event(makeDraft(name: name, type: .screen, properties: properties)))
     }
 
@@ -118,8 +129,23 @@ public final class RonalyticClient: Sendable {
         _ userID: String,
         traits: [String: PropertyValue] = [:]
     ) {
+        guard !optOutStore.isOptedOut() else { return }
         let draft = makeDraft(name: "identify", type: .identify, properties: traits)
         continuation.yield(.identify(userID: userID, draft: draft))
+    }
+
+    /// Stops collecting new events. The choice is remembered across launches.
+    public func optOut() {
+        optOutStore.setOptedOut(true)
+    }
+
+    /// Resumes collecting events.
+    public func optIn() {
+        optOutStore.setOptedOut(false)
+    }
+
+    public var isOptedOut: Bool {
+        optOutStore.isOptedOut()
     }
 
     /// Suspends until everything tracked so far has been processed.
