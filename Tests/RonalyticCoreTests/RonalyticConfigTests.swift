@@ -76,4 +76,10 @@ final class RonalyticConfigTests: XCTestCase {
 
         XCTAssertFalse(config.allowWhenConsentUnknown)
     }
+
+    func test_redactionRulesDefaultToEmpty() {
+        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+
+        XCTAssertTrue(config.redactionRules.isEmpty)
+    }
 }
