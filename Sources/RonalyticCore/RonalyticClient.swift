@@ -25,7 +25,8 @@ public final class RonalyticClient: Sendable {
         queueCapacity: Int = 1_000,
         dropPolicy: DropPolicy = .dropOldest,
         sessionTimeout: TimeInterval = 1_800,
-        optOutStore: any OptOutStore = InMemoryOptOutStore()
+        optOutStore: any OptOutStore = InMemoryOptOutStore(),
+        logger: any SDKLogger = NoOpLogger()
     ) {
         self.optOutStore = optOutStore
         self.clock = clock
@@ -38,14 +39,16 @@ public final class RonalyticClient: Sendable {
                 transport: $0,
                 batchSize: batchSize,
                 backoff: backoff,
-                clock: clock
+                clock: clock,
+                logger: logger
             )
         }
         let processor = EventProcessor(
             pipeline: Pipeline(plugins: plugins),
             storage: bounded,
             flusher: flusher,
-            flushThreshold: batchSize
+            flushThreshold: batchSize,
+            logger: logger
         )
         let (stream, continuation) = AsyncStream.makeStream(of: ClientCommand.self)
         self.continuation = continuation
@@ -99,7 +102,8 @@ public final class RonalyticClient: Sendable {
             queueCapacity: config.queueCapacity,
             dropPolicy: config.dropPolicy,
             sessionTimeout: config.sessionTimeout,
-            optOutStore: config.optOutStore
+            optOutStore: config.optOutStore,
+            logger: config.logger
         )
     }
 

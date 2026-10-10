@@ -39,6 +39,9 @@ public struct RonalyticConfig: Sendable {
     public var redactionRules: [RedactionRule]
     /// Remembers the user's opt-out choice.
     public var optOutStore: any OptOutStore
+    /// Receives the SDK's own diagnostics. Silent by default.
+    /// Use ConsoleLogger(level: .verbose) while developing.
+    public var logger: any SDKLogger
     /// Source of time. Replace in tests.
     public var clock: any SDKClock
     /// Source of event IDs. Replace in tests.
@@ -61,6 +64,7 @@ public struct RonalyticConfig: Sendable {
         allowWhenConsentUnknown: Bool = false,
         redactionRules: [RedactionRule] = [],
         optOutStore: any OptOutStore = UserDefaultsOptOutStore(),
+        logger: any SDKLogger = NoOpLogger(),
         clock: any SDKClock = SystemClock(),
         idGenerator: any IDGenerator = UUIDGenerator()
     ) {
@@ -82,5 +86,6 @@ public struct RonalyticConfig: Sendable {
         self.optOutStore = optOutStore
         self.clock = clock
         self.idGenerator = idGenerator
+        self.logger = logger
     }
 }
