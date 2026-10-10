@@ -30,6 +30,12 @@ public struct RonalyticConfig: Sendable {
     public var contextProvider: any ContextProvider
     /// Source of network state. Replace to report real connectivity.
     public var networkStateProvider: any NetworkStateProvider
+    /// Asks the app whether tracking is allowed. nil means no consent check.
+    public var consentProvider: (any ConsentProvider)?
+    /// What to do while consent is unknown. false drops the events.
+    public var allowWhenConsentUnknown: Bool
+    /// Remembers the user's opt-out choice.
+    public var optOutStore: any OptOutStore
     /// Source of time. Replace in tests.
     public var clock: any SDKClock
     /// Source of event IDs. Replace in tests.
@@ -48,6 +54,9 @@ public struct RonalyticConfig: Sendable {
         collectContext: Bool = true,
         contextProvider: any ContextProvider = SystemContextProvider(),
         networkStateProvider: any NetworkStateProvider = UnknownNetworkStateProvider(),
+        consentProvider: (any ConsentProvider)? = nil,
+        allowWhenConsentUnknown: Bool = false,
+        optOutStore: any OptOutStore = UserDefaultsOptOutStore(),
         clock: any SDKClock = SystemClock(),
         idGenerator: any IDGenerator = UUIDGenerator()
     ) {
@@ -63,6 +72,9 @@ public struct RonalyticConfig: Sendable {
         self.collectContext = collectContext
         self.contextProvider = contextProvider
         self.networkStateProvider = networkStateProvider
+        self.consentProvider = consentProvider
+        self.allowWhenConsentUnknown = allowWhenConsentUnknown
+        self.optOutStore = optOutStore
         self.clock = clock
         self.idGenerator = idGenerator
     }
