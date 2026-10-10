@@ -9,7 +9,6 @@ import RonalyticCore
 /// Assumes a single writer: each process owns its own segment file.
 struct JSONLinesSegment: Sendable {
     enum SegmentError: Error, Equatable {
-        case cannotCreateFile
         /// Line numbers start at 1.
         case corruptLine(Int)
     }
@@ -29,23 +28,7 @@ struct JSONLinesSegment: Sendable {
             data.append(try encoder.encode(event))
             data.append(Self.newline)
         }
-
-        let manager = FileManager.default
-        try manager.createDirectory(
-            at: url.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        if !manager.fileExists(atPath: url.path) {
-            guard manager.createFile(atPath: url.path, contents: nil) else {
-                throw SegmentError.cannotCreateFile
-            }
-        }
-
-        let handle = try FileHandle(forWritingTo: url)
-        defer { try? handle.close() }
-        try handle.seekToEnd()
-        try handle.write(contentsOf: data)
-        try handle.synchronize()   // fsync: survive a sudden power loss
+        try AppendOnlyFile.append(data, to: url)
     }
 
     /// Every event in the file, oldest first. A missing file means no events.
