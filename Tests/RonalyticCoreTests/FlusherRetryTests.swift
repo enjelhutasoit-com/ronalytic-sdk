@@ -116,6 +116,36 @@ final class FlusherRetryTests: XCTestCase {
         XCTAssertEqual(clock.sleeps, [.seconds(1), .seconds(1)])
     }
 
+    func test_logsFailureRetryAndSuccess() async throws {
+        try await store("a")
+        let logger = RecordingLogger()
+        let transport = FakeTransport(responses: [.throwError])
+        let flusher = makeFlusher(transport: transport, logger: logger)
+
+        await flusher.flush()
+
+        XCTAssertEqual(logger.entries, [
+            LogEntry(.error, "send failed, batch of 1 kept"),
+            LogEntry(.info, "retry 1 in 1.0s"),
+            LogEntry(.verbose, "batch of 1: delivered 1, rejected 0, kept 0")
+        ])
+    }
+
+    func test_logsGivingUp() async throws {
+        try await store("a")
+        let logger = RecordingLogger()
+        let transport = FakeTransport(responses: [.throwError, .throwError])
+        let flusher = makeFlusher(
+            transport: transport,
+            backoff: BackoffPolicy(baseDelay: 1, maxDelay: 60, maxRetries: 1),
+            logger: logger
+        )
+
+        await flusher.flush()
+
+        XCTAssertEqual(logger.entries.last, LogEntry(.error, "giving up after 1 retries"))
+    }
+
     // MARK: - Helper
 
     private func makeFlusher(
@@ -126,7 +156,8 @@ final class FlusherRetryTests: XCTestCase {
             maxDelay: 60,
             maxRetries: 5
         ),
-        jitter: Double = 1.0
+        jitter: Double = 1.0,
+        logger: any SDKLogger = NoOpLogger()
     ) -> Flusher {
         Flusher(
             storage: storage,
@@ -134,7 +165,8 @@ final class FlusherRetryTests: XCTestCase {
             batchSize: batchSize,
             backoff: backoff,
             clock: clock,
-            jitter: FixedJitter(value: jitter)
+            jitter: FixedJitter(value: jitter),
+            logger: logger
         )
     }
 

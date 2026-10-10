@@ -82,4 +82,10 @@ final class RonalyticConfigTests: XCTestCase {
 
         XCTAssertTrue(config.redactionRules.isEmpty)
     }
+
+    func test_loggerDefaultsToNoOp() {
+        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+
+        XCTAssertTrue(config.logger is NoOpLogger)
+    }
 }

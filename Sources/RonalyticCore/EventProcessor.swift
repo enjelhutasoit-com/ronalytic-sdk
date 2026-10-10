@@ -29,18 +29,21 @@ actor EventProcessor {
     private let storage: any QueueStorage
     private let flusher: Flusher?
     private let flushThreshold: Int
+    private let logger: any SDKLogger
     private var userID: String?
 
     init(
         pipeline: Pipeline,
         storage: any QueueStorage,
         flusher: Flusher?,
-        flushThreshold: Int
+        flushThreshold: Int,
+        logger: any SDKLogger = NoOpLogger()
     ) {
         self.pipeline = pipeline
         self.storage = storage
         self.flusher = flusher
         self.flushThreshold = max(flushThreshold, 1)
+        self.logger = logger
     }
 
     func handle(_ command: ClientCommand) async {
@@ -67,10 +70,18 @@ actor EventProcessor {
             userID: userID,
             properties: draft.properties
         )
-        guard let processed = await pipeline.run(event) else { return }
-        // Errors are swallowed on purpose for now: call sites never throw.
-        // The metrics commit will count these failures.
-        try? await storage.append([processed])
+        guard let processed = await pipeline.run(event) else {
+            logger.log(.verbose, "dropped by a plugin: \(draft.type.rawValue) \"\(draft.name)\" id=\(draft.id)")
+            return
+        }
+        // Call sites never throw, so a storage failure is logged instead.
+        // The metrics commit will also count it.
+        do {
+            try await storage.append([processed])
+            logger.log(.verbose, "stored \(processed.type.rawValue) \"\(processed.name)\" id=\(processed.id)")
+        } catch {
+            logger.log(.error, "could not store \(processed.type.rawValue) \"\(processed.name)\": \(error)")
+        }
         await flushIfThresholdReached()
     }
 
