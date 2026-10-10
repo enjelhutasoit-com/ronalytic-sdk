@@ -78,6 +78,10 @@ public final class RonalyticClient: Sendable {
             )
             plugins.insert(enricher, at: 0)
         }
+        if !config.redactionRules.isEmpty {
+            // Before user plugins, so destinations only ever see cleaned data.
+            plugins.insert(Redactor(rules: config.redactionRules), at: 0)
+        }
         if let consent = config.consentProvider {
             // First of all, so denied events cost nothing and never reach a destination.
             let gate = ConsentGate(provider: consent, allowWhenUnknown: config.allowWhenConsentUnknown)

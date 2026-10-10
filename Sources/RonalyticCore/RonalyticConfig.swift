@@ -34,6 +34,9 @@ public struct RonalyticConfig: Sendable {
     public var consentProvider: (any ConsentProvider)?
     /// What to do while consent is unknown. false drops the events.
     public var allowWhenConsentUnknown: Bool
+    /// Cleans event properties before storage. Empty by default.
+    /// Recommended: [.maskEmails, .maskPhoneNumbers]
+    public var redactionRules: [RedactionRule]
     /// Remembers the user's opt-out choice.
     public var optOutStore: any OptOutStore
     /// Source of time. Replace in tests.
@@ -56,6 +59,7 @@ public struct RonalyticConfig: Sendable {
         networkStateProvider: any NetworkStateProvider = UnknownNetworkStateProvider(),
         consentProvider: (any ConsentProvider)? = nil,
         allowWhenConsentUnknown: Bool = false,
+        redactionRules: [RedactionRule] = [],
         optOutStore: any OptOutStore = UserDefaultsOptOutStore(),
         clock: any SDKClock = SystemClock(),
         idGenerator: any IDGenerator = UUIDGenerator()
@@ -74,6 +78,7 @@ public struct RonalyticConfig: Sendable {
         self.networkStateProvider = networkStateProvider
         self.consentProvider = consentProvider
         self.allowWhenConsentUnknown = allowWhenConsentUnknown
+        self.redactionRules = redactionRules
         self.optOutStore = optOutStore
         self.clock = clock
         self.idGenerator = idGenerator
