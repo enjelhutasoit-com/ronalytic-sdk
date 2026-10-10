@@ -28,6 +28,10 @@ let package = Package(
         .testTarget(
             name: "RonalyticTestSupportTests",
             dependencies: ["RonalyticCore", "RonalyticTestSupport"]
+        ),
+        .testTarget(
+            name: "RonalyticFileStorageTests",
+            dependencies: ["RonalyticFileStorage", "RonalyticCore", "RonalyticTestSupport"]
         )
     ]
 )
