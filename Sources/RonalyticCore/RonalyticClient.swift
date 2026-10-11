@@ -13,7 +13,7 @@ public final class RonalyticClient: Sendable {
     private let timerTask: Task<Void, Never>?
     private let optOutStore: any OptOutStore
     private let lifecycleTask: Task<Void, Never>?
-    let metrics = MetricsRecorder()
+    let metrics: MetricsRecorder
 
     init(
         storage: any QueueStorage,
@@ -33,6 +33,7 @@ public final class RonalyticClient: Sendable {
         backgroundTaskRunner: any BackgroundTaskRunner = ImmediateBackgroundTaskRunner()
     ) {
         let recorder = MetricsRecorder()
+        self.metrics = recorder
         let tracker = SessionTracker(timeout: sessionTimeout, idGenerator: idGenerator)
         let bounded = BoundedQueueStorage(
             base: storage,
