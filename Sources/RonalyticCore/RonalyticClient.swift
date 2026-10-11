@@ -184,6 +184,12 @@ public final class RonalyticClient: Sendable {
         continuation.finish()
     }
 
+    /// A read-only photo of the SDK's own counters: drops, retries, failures, flush time.
+    /// Call again for fresher numbers.
+    public func diagnostics() -> MetricsSnapshot {
+        metrics.snapshot()
+    }
+
     /// Asks the SDK to send stored events. Returns immediately.
     public func flush() {
         continuation.yield(.flush)

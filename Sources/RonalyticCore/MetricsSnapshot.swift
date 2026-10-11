@@ -36,3 +36,18 @@ public struct MetricsSnapshot: Sendable, Equatable {
 
     public init() {}
 }
+
+public extension MetricsSnapshot {
+    /// All counters in one readable line. Handy for `print` or a debug screen.
+    var summary: String {
+        let last = lastFlushDuration.map { "\($0)s" } ?? "-"
+        return "stored=\(eventsStored) "
+            + "dropped(plugin=\(eventsDroppedByPlugin) queue=\(eventsDroppedByQueue) "
+            + "optOut=\(eventsDroppedByOptOut)) "
+            + "storageFailures=\(storageFailures) "
+            + "batches=\(batchesSent) sendFailures=\(sendFailures) "
+            + "delivered=\(eventsDelivered) rejected=\(eventsRejected) "
+            + "retries=\(retries) flushes=\(flushes) "
+            + "lastFlush=\(last) longestFlush=\(longestFlushDuration)s"
+    }
+}
