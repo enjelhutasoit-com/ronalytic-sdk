@@ -151,6 +151,56 @@ final class HTTPTransportTests: XCTestCase {
         XCTAssertEqual(HTTPTransport.outcome(forStatus: 600), .retryable)
     }
 
+    // MARK: - Partial failure (response body)
+
+    func test_successBodyWithGroups_splitsTheBatchPerEvent() async throws {
+        let body = #"{"delivered":["a"],"retryable":["b"],"rejected":["c"]}"#
+
+        let result = try await send(["a", "b", "c"], body: body)
+
+        XCTAssertEqual(result, DeliveryResult(delivered: ["a"], retryable: ["b"], rejected: ["c"]))
+    }
+
+    func test_successBodyWithoutKnownKeys_deliversEverything() async throws {
+        let result = try await send(["a", "b"], body: #"{"status":"ok"}"#)
+
+        XCTAssertEqual(result, DeliveryResult(delivered: ["a", "b"]))
+    }
+
+    func test_successBodyThatIsNotJSON_deliversEverything() async throws {
+        let result = try await send(["a", "b"], body: "OK")
+
+        XCTAssertEqual(result, DeliveryResult(delivered: ["a", "b"]))
+    }
+
+    func test_eventsMissingFromTheBody_areRetryable() async throws {
+        let result = try await send(["a", "b"], body: #"{"delivered":["a"]}"#)
+
+        XCTAssertEqual(result, DeliveryResult(delivered: ["a"], retryable: ["b"]))
+    }
+
+    func test_unknownIDsInTheBody_areIgnored() async throws {
+        let body = #"{"delivered":["a","zzz"],"retryable":["b"]}"#
+
+        let result = try await send(["a", "b"], body: body)
+
+        XCTAssertEqual(result, DeliveryResult(delivered: ["a"], retryable: ["b"]))
+    }
+
+    func test_idInSeveralGroups_theMostCautiousGroupWins() async throws {
+        let body = #"{"delivered":["a","b"],"rejected":["b","c"],"retryable":["c"]}"#
+
+        let result = try await send(["a", "b", "c"], body: body)
+
+        XCTAssertEqual(result, DeliveryResult(delivered: ["a"], retryable: ["c"], rejected: ["b"]))
+    }
+
+    func test_errorStatus_ignoresTheBody() async throws {
+        let result = try await send(["a"], status: 503, body: #"{"delivered":["a"]}"#)
+
+        XCTAssertEqual(result, DeliveryResult(delivered: [], retryable: ["a"]))
+    }
+
     // MARK: - Helper
 
     private func makeTransport(
@@ -163,5 +213,15 @@ final class HTTPTransportTests: XCTestCase {
             timeout: timeout,
             session: URLProtocolStub.makeSession()
         )
+    }
+
+    private func send(
+        _ ids: [String],
+        status: Int = 200,
+        body: String
+    ) async throws -> DeliveryResult {
+        URLProtocolStub.reset(reply: .status(status, body: Data(body.utf8)))
+
+        return try await makeTransport().send(ids.map { Event.fixture(id: $0) })
     }
 }
