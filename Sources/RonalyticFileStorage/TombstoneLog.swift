@@ -5,44 +5,41 @@
 import Foundation
 
 /// A file listing IDs of events that were removed. One JSON string per line.
-/// Like segments, it is only ever appended to.
+/// Appended to during normal use, rewritten only by compaction.
 struct TombstoneLog: Sendable {
-    enum LogError: Error, Equatable {
-        /// Line numbers start at 1.
-        case corruptLine(Int)
-    }
-
     let url: URL
-
-    private static let newline = UInt8(ascii: "\n")
 
     func append(_ ids: Set<String>) throws {
         guard !ids.isEmpty else { return }
 
+        try AppendOnlyFile.append(try encode(ids), to: url)
+    }
+
+    /// Every removed ID. A missing file means nothing was removed.
+    /// Corrupt lines are skipped.
+    func readAll() throws -> Set<String> {
+        guard let data = try JSONLines.readData(at: url) else { return [] }
+
+        return Set(JSONLines.decode(String.self, from: data).values)
+    }
+
+    /// Replaces the whole file in one atomic step. No IDs means the file is deleted.
+    func replace(with ids: Set<String>) throws {
+        if ids.isEmpty {
+            try JSONLines.removeFile(at: url)
+        } else {
+            try encode(ids).write(to: url, options: .atomic)
+        }
+    }
+
+    private func encode(_ ids: Set<String>) throws -> Data {
         let encoder = JSONEncoder()
         var data = Data()
         for id in ids.sorted() {
             data.append(try encoder.encode(id))
-            data.append(Self.newline)
+            data.append(JSONLines.newline)
         }
-        try AppendOnlyFile.append(data, to: url)
-    }
 
-    /// Every removed ID. A missing file means nothing was removed.
-    func readAll() throws -> Set<String> {
-        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
-
-        let data = try Data(contentsOf: url)
-        let decoder = JSONDecoder()
-        var ids = Set<String>()
-        let lines = data.split(separator: Self.newline, omittingEmptySubsequences: true)
-        for (index, line) in lines.enumerated() {
-            do {
-                ids.insert(try decoder.decode(String.self, from: Data(line)))
-            } catch {
-                throw LogError.corruptLine(index + 1)
-            }
-        }
-        return ids
+        return data
     }
 }

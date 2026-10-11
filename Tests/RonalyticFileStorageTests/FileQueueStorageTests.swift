@@ -105,4 +105,95 @@ final class FileQueueStorageTests: XCTestCase {
 
         XCTAssertEqual(count, 1)
     }
+
+    // MARK: - Corruption recovery
+
+    func test_corruptSegmentLine_doesNotBreakPeek() async throws {
+        let storage = FileQueueStorage(directory: shared, writerID: "one")
+        try await storage.append([.fixture(id: "a")])
+        let handle = try FileHandle(forWritingTo: segmentURL("one"))
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data("{garbage".utf8))
+        try handle.close()
+
+        let events = try await storage.peek(limit: 10)
+
+        XCTAssertEqual(events.map(\.id), ["a"])
+    }
+
+    // MARK: - Compaction
+
+    func test_compact_deletesFilesWhenEverythingWasRemoved() async throws {
+        let storage = FileQueueStorage(directory: shared, writerID: "one")
+        try await storage.append([.fixture(id: "a"), .fixture(id: "b")])
+        try await storage.remove(ids: ["a", "b"])
+
+        try await storage.compact()
+
+        XCTAssertEqual(try fileNames(), [])
+    }
+
+    func test_compact_rewritesSegmentKeepingLiveEvents() async throws {
+        let storage = FileQueueStorage(directory: shared, writerID: "one")
+        try await storage.append([.fixture(id: "a"), .fixture(id: "b"), .fixture(id: "c")])
+        try await storage.remove(ids: ["a"])
+
+        try await storage.compact()
+        let events = try await storage.peek(limit: 10)
+
+        XCTAssertEqual(events.map(\.id), ["b", "c"])
+        XCTAssertEqual(try JSONLinesSegment(url: segmentURL("one")).readAll().count, 2)
+    }
+
+    func test_compact_keepsTombstoneWhileTheEventStillExistsInAnotherWriter() async throws {
+        let app = FileQueueStorage(directory: shared, writerID: "app")
+        let widget = FileQueueStorage(directory: shared, writerID: "widget")
+        try await app.append([.fixture(id: "a"), .fixture(id: "b")])
+        try await widget.remove(ids: ["a"])
+
+        try await widget.compact()
+        let events = try await app.peek(limit: 10)
+        let names = try fileNames()
+
+        XCTAssertEqual(events.map(\.id), ["b"])
+        XCTAssertTrue(names.contains("tombstones-widget.jsonl"))
+    }
+
+    func test_compact_dropsTombstoneOnceTheOwnerCleanedItsSegment() async throws {
+        let app = FileQueueStorage(directory: shared, writerID: "app")
+        let widget = FileQueueStorage(directory: shared, writerID: "widget")
+        try await app.append([.fixture(id: "a"), .fixture(id: "b")])
+        try await widget.remove(ids: ["a"])
+
+        try await app.compact()
+        try await widget.compact()
+        let events = try await app.peek(limit: 10)
+        let names = try fileNames()
+
+        XCTAssertEqual(events.map(\.id), ["b"])
+        XCTAssertFalse(names.contains("tombstones-widget.jsonl"))
+    }
+
+    func test_removingEnoughEvents_triggersCompactionAutomatically() async throws {
+        let storage = FileQueueStorage(directory: shared, writerID: "one", compactionThreshold: 2)
+        try await storage.append([.fixture(id: "a"), .fixture(id: "b"), .fixture(id: "c")])
+
+        try await storage.remove(ids: ["a"])
+        let beforeThreshold = try JSONLinesSegment(url: segmentURL("one")).readAll().count
+        try await storage.remove(ids: ["b"])
+        let afterThreshold = try JSONLinesSegment(url: segmentURL("one")).readAll().count
+
+        XCTAssertEqual(beforeThreshold, 3)
+        XCTAssertEqual(afterThreshold, 1)
+    }
+
+    // MARK: - Helper
+
+    private func fileNames() throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: shared.path).sorted()
+    }
+
+    private func segmentURL(_ writerID: String) -> URL {
+        shared.appendingPathComponent("segment-\(writerID).jsonl")
+    }
 }

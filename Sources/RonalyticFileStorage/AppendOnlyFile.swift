@@ -20,7 +20,21 @@ enum AppendOnlyFile {
 
         let handle = try FileHandle(forWritingTo: url)
         defer { try? handle.close() }
-        try handle.seekToEnd()
+
+        var payload = data
+        let end = try handle.seekToEnd()
+        if end > 0 {
+            /// A crash can leave a half-written last line without a newline.
+            /// Start on a fresh line, so the new data does not glue onto the damage.
+            try handle.seek(toOffset: end - 1)
+            let last = try handle.read(upToCount: 1)
+            if last?.first != JSONLines.newline {
+                payload.insert(JSONLines.newline, at: 0)
+            }
+            try handle.seekToEnd()
+
+        }
+
         try handle.write(contentsOf: data)
         try handle.synchronize()   // fsync: survive a sudden power loss
     }
