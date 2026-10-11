@@ -49,3 +49,6 @@ jobs:
           COV=$(xcrun xccov view --report --json TestResults.xcresult | jq '.lineCoverage * 100')
           echo "Line coverage: ${COV}% (minimum ${COVERAGE_MIN}%)"
           awk -v c="$COV" -v m="$COVERAGE_MIN" 'BEGIN { exit (c+0 < m+0) }'
+
+      - name: Check public API baseline
+        run: Scripts/api-dump.sh --check
