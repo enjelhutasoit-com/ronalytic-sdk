@@ -83,6 +83,21 @@ final class BoundedQueueStorageTests: XCTestCase {
         try await QueueStorageContract.removeUnknownIDsIsNoOp(make)
     }
 
+    func test_dropsAreReportedToMetrics() async throws {
+        let metrics = MetricsRecorder()
+        let queue = BoundedQueueStorage(
+            base: InMemoryQueueStorage(),
+            capacity: 2,
+            policy: .dropOldest,
+            metrics: metrics
+        )
+
+        try await queue.append([.fixture(id: "a"), .fixture(id: "b"), .fixture(id: "c"), .fixture(id: "d")])
+        let snapshot = metrics.snapshot()
+
+        XCTAssertEqual(snapshot.eventsDroppedByQueue, 2)
+    }
+
     // MARK: - Helper
 
     private func makeQueue(capacity: Int, policy: DropPolicy) -> BoundedQueueStorage {

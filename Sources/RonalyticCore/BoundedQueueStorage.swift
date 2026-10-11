@@ -3,21 +3,24 @@
 //
 
 /// Wraps any QueueStorage and keeps it within `capacity` events.
-/// Counts every discarded event so metrics can report it later.
+/// Counts every discarded event so metrics can report it.
 actor BoundedQueueStorage: QueueStorage {
     private let base: any QueueStorage
     private let capacity: Int
     private let policy: DropPolicy
+    private let metrics: MetricsRecorder?
     private(set) var droppedCount = 0
 
     init(
         base: any QueueStorage,
         capacity: Int,
-        policy: DropPolicy
+        policy: DropPolicy,
+        metrics: MetricsRecorder? = nil
     ) {
         self.base = base
         self.capacity = max(capacity, 1)
         self.policy = policy
+        self.metrics = metrics
     }
 
     func append(_ events: [Event]) async throws {
@@ -45,22 +48,29 @@ actor BoundedQueueStorage: QueueStorage {
         let stored = try await base.count()
         let free = max(capacity - stored, 0)
         let accepted = Array(events.prefix(free))
-        droppedCount += events.count - accepted.count
+        countDropped(events.count - accepted.count)
         guard !accepted.isEmpty else { return }
         try await base.append(accepted)
     }
 
     private func appendDroppingOldest(_ events: [Event]) async throws {
         let incoming = Array(events.suffix(capacity))
-        droppedCount += events.count - incoming.count
+        countDropped(events.count - incoming.count)
 
         let stored = try await base.count()
         let overflow = stored + incoming.count - capacity
         if overflow > 0 {
             let oldest = try await base.peek(limit: overflow)
             try await base.remove(ids: Set(oldest.map(\.id)))
-            droppedCount += oldest.count
+            countDropped(oldest.count)
         }
         try await base.append(incoming)
+    }
+
+    private func countDropped(_ amount: Int) {
+        guard amount > 0 else { return }
+
+        droppedCount += amount
+        metrics?.record { $0.eventsDroppedByQueue += amount }
     }
 }
