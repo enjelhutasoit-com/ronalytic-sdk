@@ -92,4 +92,21 @@ final class AppGroupStorageTests: XCTestCase {
         XCTAssertEqual(files.count, 1)
         XCTAssertEqual(events.map(\.id), ["a", "b"])
     }
+
+    func test_eventWrittenByAnExtension_isReadByTheApp() async throws {
+        let app = try makeStorage(writerID: "app")
+        let widgetStorage = try makeStorage(writerID: "widget")
+        let widget = RonalyticExtension(config: RonalyticConfig(
+            storage: widgetStorage,
+            flushInterval: nil,
+            collectContext: false,
+            optOutStore: InMemoryOptOutStore()
+        ))
+
+        widget.track("widget_tapped")
+        await widget.waitUntilStored()
+        let seenByApp = try await app.peek(limit: 10)
+
+        XCTAssertEqual(seenByApp.map(\.name), ["widget_tapped"])
+    }
 }
