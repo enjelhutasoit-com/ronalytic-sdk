@@ -28,7 +28,8 @@ public final class RonalyticClient: Sendable {
         sessionTimeout: TimeInterval = 1_800,
         optOutStore: any OptOutStore = InMemoryOptOutStore(),
         logger: any SDKLogger = NoOpLogger(),
-        lifecycleObserver: (any LifecycleObserver)? = nil
+        lifecycleObserver: (any LifecycleObserver)? = nil,
+        backgroundTaskRunner: any BackgroundTaskRunner = ImmediateBackgroundTaskRunner()
     ) {
         let tracker = SessionTracker(timeout: sessionTimeout, idGenerator: idGenerator)
         let bounded = BoundedQueueStorage(base: storage, capacity: queueCapacity, policy: dropPolicy)
@@ -63,7 +64,9 @@ public final class RonalyticClient: Sendable {
             observer: lifecycleObserver,
             tracker: tracker,
             clock: clock,
-            continuation: continuation
+            continuation: continuation,
+            backgroundTaskRunner: backgroundTaskRunner
+
         )
         Self.startProcessing(stream, with: processor)
     }
@@ -86,7 +89,8 @@ public final class RonalyticClient: Sendable {
         observer: (any LifecycleObserver)?,
         tracker: SessionTracker,
         clock: any SDKClock,
-        continuation: AsyncStream<ClientCommand>.Continuation
+        continuation: AsyncStream<ClientCommand>.Continuation,
+        backgroundTaskRunner: any BackgroundTaskRunner
     ) -> Task<Void, Never>? {
         guard let observer else { return nil }
 
@@ -95,8 +99,17 @@ public final class RonalyticClient: Sendable {
             for await event in lifecycleEvents {
                 switch event {
                 case .didEnterBackground, .willTerminate:
-                    // Events are already on disk. This only uploads them.
-                    continuation.yield(.flush)
+                    // Events are already on disk. This only uploads them,
+                    // and keeps the app alive until the upload is finished.
+                    await backgroundTaskRunner.run {
+                        continuation.yield(.flush)
+                        await withCheckedContinuation { barrier in
+                            // A finished stream drops the barrier. Resume it ourselves.
+                            if case .terminated = continuation.yield(.barrier(barrier)) {
+                                barrier.resume()
+                            }
+                        }
+                    }
                 case .willEnterForeground:
                     // Opening the app is activity: it extends or restarts the session.
                     _ = tracker.sessionID(at: clock.now())
@@ -150,7 +163,8 @@ public final class RonalyticClient: Sendable {
             sessionTimeout: config.sessionTimeout,
             optOutStore: config.optOutStore,
             logger: config.logger,
-            lifecycleObserver: config.lifecycleObserver
+            lifecycleObserver: config.lifecycleObserver,
+            backgroundTaskRunner: config.backgroundTaskRunner
         )
     }
 

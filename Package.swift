@@ -36,6 +36,10 @@ let package = Package(
         .testTarget(
             name: "RonalyticHTTPTests",
             dependencies: ["RonalyticHTTP", "RonalyticCore", "RonalyticTestSupport"]
+        ),
+        .testTarget(
+            name: "RonalyticLifecycleTests",
+            dependencies: ["RonalyticLifecycle", "RonalyticCore", "RonalyticTestSupport"]
         )
     ]
 )
