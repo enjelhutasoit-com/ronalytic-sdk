@@ -4,7 +4,7 @@
 
 import Foundation
 
-/// Adds bytes to the end of a file and forces them onto the disk.
+/// Adds lines to the end of a file and forces them onto the disk.
 enum AppendOnlyFile {
     static func append(_ data: Data, to url: URL) throws {
         let manager = FileManager.default
@@ -18,7 +18,8 @@ enum AppendOnlyFile {
             }
         }
 
-        let handle = try FileHandle(forWritingTo: url)
+        // forUpdating = read and write. forWritingTo cannot read the last byte.
+        let handle = try FileHandle(forUpdating: url)
         defer { try? handle.close() }
 
         var payload = data
@@ -35,7 +36,7 @@ enum AppendOnlyFile {
 
         }
 
-        try handle.write(contentsOf: data)
+        try handle.write(contentsOf: payload)
         try handle.synchronize()   // fsync: survive a sudden power loss
     }
 }
