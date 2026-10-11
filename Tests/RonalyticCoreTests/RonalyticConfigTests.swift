@@ -94,4 +94,10 @@ final class RonalyticConfigTests: XCTestCase {
 
         XCTAssertNil(config.lifecycleObserver)
     }
+
+    func test_backgroundTaskRunnerDefaultsToImmediate() {
+        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+
+        XCTAssertTrue(config.backgroundTaskRunner is ImmediateBackgroundTaskRunner)
+    }
 }

@@ -45,6 +45,9 @@ public struct RonalyticConfig: Sendable {
     /// Receives app lifecycle changes: flushes on background, counts foreground as activity.
     /// nil means no lifecycle handling. The Ronalytic umbrella module will provide a UIKit one.
     public var lifecycleObserver: (any LifecycleObserver)?
+    /// Keeps the app alive while the background flush finishes.
+    /// The RonalyticLifecycle module offers a UIKit one for apps.
+    public var backgroundTaskRunner: any BackgroundTaskRunner
     /// Source of time. Replace in tests.
     public var clock: any SDKClock
     /// Source of event IDs. Replace in tests.
@@ -69,6 +72,7 @@ public struct RonalyticConfig: Sendable {
         optOutStore: any OptOutStore = UserDefaultsOptOutStore(),
         logger: any SDKLogger = NoOpLogger(),
         lifecycleObserver: (any LifecycleObserver)? = nil,
+        backgroundTaskRunner: any BackgroundTaskRunner = ImmediateBackgroundTaskRunner(),
         clock: any SDKClock = SystemClock(),
         idGenerator: any IDGenerator = UUIDGenerator()
     ) {
@@ -92,5 +96,6 @@ public struct RonalyticConfig: Sendable {
         self.idGenerator = idGenerator
         self.logger = logger
         self.lifecycleObserver = lifecycleObserver
+        self.backgroundTaskRunner = backgroundTaskRunner
     }
 }
