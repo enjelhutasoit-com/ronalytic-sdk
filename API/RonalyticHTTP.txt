@@ -1,0 +1,4 @@
+HTTPTransport :: swift.struct :: struct HTTPTransport
+HTTPTransport.endpoint :: swift.property :: let endpoint: URL
+HTTPTransport.init(endpoint:headers:timeout:session:) :: swift.init :: init(endpoint: URL, headers: [String : String] = [:], timeout: TimeInterval = 30, session: URLSession = .shared)
+HTTPTransport.send(_:) :: swift.method :: func send(_ batch: [Event]) async throws -> DeliveryResult
