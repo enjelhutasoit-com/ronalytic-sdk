@@ -26,7 +26,7 @@ final class RonalyticSDKTests: XCTestCase {
     }
 
     func test_configureThenTrack_reachesStorage() async throws {
-        let storage = InMemoryQueueStorage()
+        let storage = QueueStorageFake()
         RonalyticSDK.configure(makeConfig(storage: storage))
 
         RonalyticSDK.track("purchase", properties: ["price": 9.99])
@@ -38,8 +38,8 @@ final class RonalyticSDKTests: XCTestCase {
     }
 
     func test_configureTwice_firstConfigWins() async throws {
-        let first = InMemoryQueueStorage()
-        let second = InMemoryQueueStorage()
+        let first = QueueStorageFake()
+        let second = QueueStorageFake()
         RonalyticSDK.configure(makeConfig(storage: first))
         RonalyticSDK.configure(makeConfig(storage: second))
 
@@ -53,7 +53,7 @@ final class RonalyticSDKTests: XCTestCase {
     }
 
     func test_trackScreenAndIdentify_areForwarded() async throws {
-        let storage = InMemoryQueueStorage()
+        let storage = QueueStorageFake()
         RonalyticSDK.configure(makeConfig(storage: storage))
 
         RonalyticSDK.track("a")
@@ -67,8 +67,8 @@ final class RonalyticSDKTests: XCTestCase {
     }
 
     func test_flush_sendsStoredEvents() async {
-        let transport = FakeTransport()
-        RonalyticSDK.configure(makeConfig(storage: InMemoryQueueStorage(), transport: transport))
+        let transport = TransportSpy()
+        RonalyticSDK.configure(makeConfig(storage: QueueStorageFake(), transport: transport))
 
         RonalyticSDK.track("a")
         RonalyticSDK.flush()
@@ -86,14 +86,14 @@ final class RonalyticSDKTests: XCTestCase {
     }
 
     func test_optOut_stopsTracking() async throws {
-        let storage = InMemoryQueueStorage()
+        let storage = QueueStorageFake()
         RonalyticSDK.configure(
             RonalyticConfig(
                 storage: storage,
                 flushInterval: nil,
                 optOutStore: InMemoryOptOutStore(),
-                clock: FakeClock(),
-                idGenerator: SequentialIDGenerator()
+                clock: ClockFake(),
+                idGenerator: IDGeneratorFake()
             )
         )
 
@@ -112,7 +112,7 @@ final class RonalyticSDKTests: XCTestCase {
     }
 
     func test_diagnosticsAfterConfigure_reflectsTrackedEvents() async {
-        RonalyticSDK.configure(makeConfig(storage: InMemoryQueueStorage()))
+        RonalyticSDK.configure(makeConfig(storage: QueueStorageFake()))
 
         RonalyticSDK.track("a")
         RonalyticSDK.track("b")
@@ -125,15 +125,15 @@ final class RonalyticSDKTests: XCTestCase {
     // MARK: - Helper
 
     private func makeConfig(
-        storage: InMemoryQueueStorage,
-        transport: FakeTransport? = nil
+        storage: QueueStorageFake,
+        transport: TransportSpy? = nil
     ) -> RonalyticConfig {
         RonalyticConfig(
             storage: storage,
             transport: transport,
             flushInterval: nil,
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator()
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake()
         )
     }
 }

@@ -17,15 +17,15 @@ private struct PrefixPlugin: Plugin {
 
 final class RonalyticClientConfigTests: XCTestCase {
     func test_initWithConfig_appliesPluginsTransportAndBatchSize() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let config = RonalyticConfig(
-            storage: InMemoryQueueStorage(),
+            storage: QueueStorageFake(),
             transport: transport,
             plugins: [PrefixPlugin()],
             batchSize: 2,
             flushInterval: nil,
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator()
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake()
         )
         let client = RonalyticClient(config: config)
 

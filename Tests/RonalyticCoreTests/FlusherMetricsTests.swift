@@ -7,8 +7,8 @@ import RonalyticTestSupport
 @testable import RonalyticCore
 
 /// Advances the fake clock while "sending", so a flush has a measurable duration.
-private struct SlowTransport: Transport {
-    let clock: FakeClock
+private struct SlowTransportStub: Transport {
+    let clock: ClockFake
     let seconds: TimeInterval
 
     func send(_ batch: [Event]) async throws -> DeliveryResult {
@@ -18,10 +18,10 @@ private struct SlowTransport: Transport {
 }
 
 /// Storage whose `remove` always fails.
-private actor RemoveAlwaysFailsStorage: QueueStorage {
+private actor RemoveAlwaysFailsStorageStub: QueueStorage {
     struct Failure: Error {}
 
-    private let base = InMemoryQueueStorage()
+    private let base = QueueStorageFake()
 
     func append(_ events: [Event]) async throws { try await base.append(events) }
     func peek(limit: Int) async throws -> [Event] { try await base.peek(limit: limit) }
@@ -31,8 +31,8 @@ private actor RemoveAlwaysFailsStorage: QueueStorage {
 
 final class FlusherMetricsTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
-    private let clock = FakeClock()
+    private let storage = QueueStorageFake()
+    private let clock = ClockFake()
     private let metrics = MetricsRecorder()
 
     private func makeFlusher(
@@ -56,7 +56,7 @@ final class FlusherMetricsTests: XCTestCase {
 
     func test_deliveredEvents_areCounted() async throws {
         try await store("a", "b")
-        let flusher = makeFlusher(transport: FakeTransport())
+        let flusher = makeFlusher(transport: TransportSpy())
 
         await flusher.flush()
         let snapshot = metrics.snapshot()
@@ -70,7 +70,7 @@ final class FlusherMetricsTests: XCTestCase {
     func test_partialFailure_countsDeliveredAndRejectedOnly() async throws {
         try await store("a", "b", "c")
         let result = DeliveryResult(delivered: ["a"], retryable: ["b"], rejected: ["c"])
-        let flusher = makeFlusher(transport: FakeTransport(responses: [.result(result)]))
+        let flusher = makeFlusher(transport: TransportSpy(responses: [.result(result)]))
 
         await flusher.flush()
         let snapshot = metrics.snapshot()
@@ -83,7 +83,7 @@ final class FlusherMetricsTests: XCTestCase {
     func test_failedSendThenRetry_countsFailureAndRetry() async throws {
         try await store("a")
         let flusher = makeFlusher(
-            transport: FakeTransport(responses: [.throwError]),
+            transport: TransportSpy(responses: [.throwError]),
             backoff: BackoffPolicy(baseDelay: 1, maxDelay: 60, maxRetries: 5)
         )
 
@@ -100,7 +100,7 @@ final class FlusherMetricsTests: XCTestCase {
     func test_givingUp_countsEveryFailedSend() async throws {
         try await store("a")
         let flusher = makeFlusher(
-            transport: FakeTransport(responses: [.throwError, .throwError]),
+            transport: TransportSpy(responses: [.throwError, .throwError]),
             backoff: BackoffPolicy(baseDelay: 1, maxDelay: 60, maxRetries: 1)
         )
 
@@ -114,7 +114,7 @@ final class FlusherMetricsTests: XCTestCase {
 
     func test_flushDuration_isMeasuredWithTheClock() async throws {
         try await store("a")
-        let flusher = makeFlusher(transport: SlowTransport(clock: clock, seconds: 2))
+        let flusher = makeFlusher(transport: SlowTransportStub(clock: clock, seconds: 2))
 
         await flusher.flush()
         let snapshot = metrics.snapshot()
@@ -124,7 +124,7 @@ final class FlusherMetricsTests: XCTestCase {
     }
 
     func test_flushWithNothingToSend_isNotCounted() async {
-        let flusher = makeFlusher(transport: FakeTransport())
+        let flusher = makeFlusher(transport: TransportSpy())
 
         await flusher.flush()
         let snapshot = metrics.snapshot()
@@ -134,9 +134,9 @@ final class FlusherMetricsTests: XCTestCase {
     }
 
     func test_failedRemoval_countsStorageFailureAndNoDelivery() async throws {
-        let failing = RemoveAlwaysFailsStorage()
+        let failing = RemoveAlwaysFailsStorageStub()
         try await failing.append([.fixture(id: "a")])
-        let flusher = makeFlusher(storage: failing, transport: FakeTransport())
+        let flusher = makeFlusher(storage: failing, transport: TransportSpy())
 
         await flusher.flush()
         let snapshot = metrics.snapshot()

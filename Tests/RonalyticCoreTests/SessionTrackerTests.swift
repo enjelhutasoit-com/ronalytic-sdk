@@ -67,7 +67,7 @@ final class SessionTrackerTests: XCTestCase {
     private func makeTracker(timeout: TimeInterval = 1_800) -> SessionTracker {
         SessionTracker(
             timeout: timeout,
-            idGenerator: SequentialIDGenerator()
+            idGenerator: IDGeneratorFake()
         )
     }
 

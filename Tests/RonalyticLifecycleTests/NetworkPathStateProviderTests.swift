@@ -6,7 +6,7 @@ import XCTest
 import RonalyticCore
 @testable import RonalyticLifecycle
 
-private final class FakePathMonitor: PathMonitoring, @unchecked Sendable {
+private final class PathMonitorFake: PathMonitoring, @unchecked Sendable {
     private let lock = NSLock()
     private var handler: (@Sendable (NetworkPathSnapshot) -> Void)?
     private var stops = 0
@@ -31,7 +31,7 @@ private final class FakePathMonitor: PathMonitoring, @unchecked Sendable {
 
 final class NetworkPathStateProviderTests: XCTestCase {
 
-    private let monitor = FakePathMonitor()
+    private let monitor = PathMonitorFake()
 
     private var provider: NetworkPathStateProvider {
         NetworkPathStateProvider(monitor: monitor)

@@ -6,9 +6,9 @@ import XCTest
 import RonalyticCore
 import RonalyticTestSupport
 
-final class FakeTransportTests: XCTestCase {
+final class TransportSpyTests: XCTestCase {
     func test_defaultsToDeliveringEverything() async throws {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
 
         let result = try await transport.send([.fixture(id: "a"), .fixture(id: "b")])
 
@@ -16,7 +16,7 @@ final class FakeTransportTests: XCTestCase {
     }
 
     func test_recordsEveryBatchInOrder() async throws {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
 
         _ = try await transport.send([.fixture(id: "a")])
         _ = try await transport.send([.fixture(id: "b")])
@@ -26,7 +26,7 @@ final class FakeTransportTests: XCTestCase {
     }
 
     func test_playsScriptedResponsesThenFallsBackToDeliverAll() async throws {
-        let transport = FakeTransport(responses: [.throwError])
+        let transport = TransportSpy(responses: [.throwError])
 
         await XCTAssertThrowsErrorAsync(try await transport.send([.fixture(id: "a")]))
         let second = try await transport.send([.fixture(id: "a")])

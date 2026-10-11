@@ -11,7 +11,7 @@ private struct DropAllPlugin: Plugin {
     func process(_ event: Event) async -> Event? { nil }
 }
 
-private struct FailingStorage: QueueStorage {
+private struct FailingStorageStub: QueueStorage {
     struct Failure: Error {}
     func append(_ events: [Event]) async throws { throw Failure() }
     func peek(limit: Int) async throws -> [Event] { [] }
@@ -56,7 +56,7 @@ final class RonalyticClientMetricsTests: XCTestCase {
     }
 
     func test_storageFailure_isCounted() async {
-        let client = makeClient(storage: FailingStorage())
+        let client = makeClient(storage: FailingStorageStub())
 
         client.track("a")
         await client.waitUntilIdle()
@@ -93,14 +93,14 @@ final class RonalyticClientMetricsTests: XCTestCase {
     // MARK: - Helper
 
     private func makeClient(
-        storage: any QueueStorage = InMemoryQueueStorage(),
+        storage: any QueueStorage = QueueStorageFake(),
         plugins: [any Plugin] = []
     ) -> RonalyticClient {
         RonalyticClient(
             storage: storage,
             plugins: plugins,
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator(),
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake(),
             optOutStore: InMemoryOptOutStore()
         )
     }

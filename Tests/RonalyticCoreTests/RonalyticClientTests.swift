@@ -22,7 +22,7 @@ private struct DropAllPlugin: Plugin {
     func process(_ event: RonalyticCore.Event) async -> RonalyticCore.Event? { nil }
 }
 
-private struct FailingStorage: QueueStorage {
+private struct FailingStorageStub: QueueStorage {
     struct Failure: Error {}
 
     func append(_ events: [RonalyticCore.Event]) async throws { throw Failure() }
@@ -32,8 +32,8 @@ private struct FailingStorage: QueueStorage {
 }
 
 final class RonalyticClientTests: XCTestCase {
-    private let storage = InMemoryQueueStorage()
-    private let clock = FakeClock(start: Date(timeIntervalSince1970: 500))
+    private let storage = QueueStorageFake()
+    private let clock = ClockFake(start: Date(timeIntervalSince1970: 500))
 
     private func makeClient(
         plugins: [any Plugin] = [],
@@ -43,7 +43,7 @@ final class RonalyticClientTests: XCTestCase {
             storage: storage ?? self.storage,
             plugins: plugins,
             clock: clock,
-            idGenerator: SequentialIDGenerator()
+            idGenerator: IDGeneratorFake()
         )
     }
 
@@ -149,7 +149,7 @@ final class RonalyticClientTests: XCTestCase {
     }
 
     func test_storageFailure_doesNotCrashAndLaterEventsStillWork() async {
-        let client = makeClient(storage: FailingStorage())
+        let client = makeClient(storage: FailingStorageStub())
         client.track("lost")
         client.track("also lost")
         await client.waitUntilIdle()   // reaching this line is the assertion

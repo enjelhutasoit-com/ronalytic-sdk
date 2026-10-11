@@ -23,7 +23,7 @@ final class ContextEnricherTests: XCTestCase {
 
     func test_addsNetworkState() async {
         let enricher = makeEnricher(
-            network: FakeNetworkStateProvider(.cellular)
+            network: NetworkStateProviderFake(.cellular)
         )
 
         let result = await enricher.process(.fixture())
@@ -32,7 +32,7 @@ final class ContextEnricherTests: XCTestCase {
     }
 
     func test_readsNetworkStateForEveryEvent() async {
-        let network = FakeNetworkStateProvider(.wifi)
+        let network = NetworkStateProviderFake(.wifi)
         let enricher = makeEnricher(network: network)
 
         let first = await enricher.process(.fixture(id: "a"))
@@ -67,9 +67,9 @@ final class ContextEnricherTests: XCTestCase {
 
     // MARK: - Helper
 
-    private func makeEnricher(network: FakeNetworkStateProvider = FakeNetworkStateProvider(.wifi)) -> ContextEnricher {
+    private func makeEnricher(network: NetworkStateProviderFake = NetworkStateProviderFake(.wifi)) -> ContextEnricher {
         ContextEnricher(
-            contextProvider: FakeContextProvider(.fixture),
+            contextProvider: ContextProviderStub(.fixture),
             networkStateProvider: network
         )
     }

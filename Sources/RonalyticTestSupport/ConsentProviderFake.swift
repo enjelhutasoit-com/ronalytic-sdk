@@ -5,7 +5,7 @@
 import RonalyticCore
 
 /// Consent provider whose status tests can change.
-public actor FakeConsentProvider: ConsentProvider {
+public actor ConsentProviderFake: ConsentProvider {
     private var current: ConsentStatus
 
     public init(_ status: ConsentStatus = .granted) {

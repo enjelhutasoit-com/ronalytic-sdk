@@ -7,10 +7,10 @@ import RonalyticTestSupport
 @testable import RonalyticCore
 
 final class RonalyticClientAutoFlushTests: XCTestCase {
-    private let storage = InMemoryQueueStorage()
+    private let storage = QueueStorageFake()
 
     func test_reachingBatchSize_flushesWithoutExplicitFlush() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let client = makeClient(transport: transport, batchSize: 3)
 
         ["a", "b", "c"].forEach { client.track($0) }
@@ -25,7 +25,7 @@ final class RonalyticClientAutoFlushTests: XCTestCase {
     }
 
     func test_belowBatchSize_doesNotFlush() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let client = makeClient(transport: transport, batchSize: 3)
 
         ["a", "b"].forEach { client.track($0) }
@@ -36,7 +36,7 @@ final class RonalyticClientAutoFlushTests: XCTestCase {
     }
 
     func test_autoFlush_removesDeliveredEvents() async throws {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let client = makeClient(transport: transport, batchSize: 2)
 
         ["a", "b"].forEach { client.track($0) }
@@ -47,7 +47,7 @@ final class RonalyticClientAutoFlushTests: XCTestCase {
     }
 
     func test_flushesEachTimeTheThresholdIsReached() async throws {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let client = makeClient(transport: transport, batchSize: 2)
 
         ["a", "b", "c", "d", "e"].forEach { client.track($0) }
@@ -75,11 +75,11 @@ final class RonalyticClientAutoFlushTests: XCTestCase {
 
     // MARK: - Helper
 
-    private func makeClient(transport: FakeTransport?, batchSize: Int) -> RonalyticClient {
+    private func makeClient(transport: TransportSpy?, batchSize: Int) -> RonalyticClient {
         RonalyticClient(
             storage: storage,
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator(),
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake(),
             transport: transport,
             batchSize: batchSize
         )

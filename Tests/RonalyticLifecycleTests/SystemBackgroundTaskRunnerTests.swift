@@ -5,7 +5,7 @@
 import XCTest
 @testable import RonalyticLifecycle
 
-private final class FakeBackgroundTaskAPI: BackgroundTaskAPI, @unchecked Sendable {
+private final class BackgroundTaskAPIFake: BackgroundTaskAPI, @unchecked Sendable {
     private let lock = NSLock()
     private var entries: [String] = []
     private var expirationHandler: (@Sendable () -> Void)?
@@ -45,7 +45,7 @@ private final class FakeBackgroundTaskAPI: BackgroundTaskAPI, @unchecked Sendabl
 final class SystemBackgroundTaskRunnerTests: XCTestCase {
 
     func test_beginsBeforeTheWork_andEndsAfterIt() async {
-        let api = FakeBackgroundTaskAPI()
+        let api = BackgroundTaskAPIFake()
         let runner = SystemBackgroundTaskRunner(api: api)
 
         await runner.run { api.record("work") }
@@ -54,7 +54,7 @@ final class SystemBackgroundTaskRunnerTests: XCTestCase {
     }
 
     func test_expiration_endsTheTaskOnce() async {
-        let api = FakeBackgroundTaskAPI()
+        let api = BackgroundTaskAPIFake()
         let runner = SystemBackgroundTaskRunner(api: api)
 
         await runner.run {
@@ -66,7 +66,7 @@ final class SystemBackgroundTaskRunnerTests: XCTestCase {
     }
 
     func test_whenTheSystemRefusesATask_theWorkStillRuns() async {
-        let api = FakeBackgroundTaskAPI(accepts: false)
+        let api = BackgroundTaskAPIFake(accepts: false)
         let runner = SystemBackgroundTaskRunner(api: api)
 
         await runner.run { api.record("work") }
@@ -75,7 +75,7 @@ final class SystemBackgroundTaskRunnerTests: XCTestCase {
     }
 
     func test_theWorkRunsExactlyOnce() async {
-        let api = FakeBackgroundTaskAPI()
+        let api = BackgroundTaskAPIFake()
         let runner = SystemBackgroundTaskRunner(api: api)
 
         await runner.run { api.record("work") }

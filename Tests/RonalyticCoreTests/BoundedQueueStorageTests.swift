@@ -73,7 +73,7 @@ final class BoundedQueueStorageTests: XCTestCase {
 
     func test_satisfiesStorageContract() async throws {
         let make: () -> any QueueStorage = {
-            BoundedQueueStorage(base: InMemoryQueueStorage(), capacity: 100, policy: .dropOldest)
+            BoundedQueueStorage(base: QueueStorageFake(), capacity: 100, policy: .dropOldest)
         }
         try await QueueStorageContract.emptyStorageHasNothing(make)
         try await QueueStorageContract.peekReturnsAppendOrder(make)
@@ -86,7 +86,7 @@ final class BoundedQueueStorageTests: XCTestCase {
     func test_dropsAreReportedToMetrics() async throws {
         let metrics = MetricsRecorder()
         let queue = BoundedQueueStorage(
-            base: InMemoryQueueStorage(),
+            base: QueueStorageFake(),
             capacity: 2,
             policy: .dropOldest,
             metrics: metrics
@@ -102,7 +102,7 @@ final class BoundedQueueStorageTests: XCTestCase {
 
     private func makeQueue(capacity: Int, policy: DropPolicy) -> BoundedQueueStorage {
         BoundedQueueStorage(
-            base: InMemoryQueueStorage(),
+            base: QueueStorageFake(),
             capacity: capacity,
             policy: policy
         )

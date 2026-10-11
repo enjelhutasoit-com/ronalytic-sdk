@@ -23,7 +23,7 @@ private actor ContextRecorder {
 
 final class RonalyticClientContextTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
+    private let storage = QueueStorageFake()
 
     private func makeClient(
         collectContext: Bool,
@@ -36,10 +36,10 @@ final class RonalyticClientContextTests: XCTestCase {
                 plugins: plugins,
                 flushInterval: nil,
                 collectContext: collectContext,
-                contextProvider: FakeContextProvider(.fixture),
-                networkStateProvider: FakeNetworkStateProvider(network),
-                clock: FakeClock(),
-                idGenerator: SequentialIDGenerator()
+                contextProvider: ContextProviderStub(.fixture),
+                networkStateProvider: NetworkStateProviderFake(network),
+                clock: ClockFake(),
+                idGenerator: IDGeneratorFake()
             )
         )
     }
@@ -79,8 +79,8 @@ final class RonalyticClientContextTests: XCTestCase {
     func test_pluginsCreatedWithoutConfig_stayUntouched() async throws {
         let client = RonalyticClient(
             storage: storage,
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator()
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake()
         )
 
         client.track("a")

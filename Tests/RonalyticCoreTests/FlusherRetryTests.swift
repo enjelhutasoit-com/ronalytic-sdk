@@ -12,12 +12,12 @@ private struct FixedJitter: JitterSource {
 }
 
 final class FlusherRetryTests: XCTestCase {
-    private let storage = InMemoryQueueStorage()
-    private let clock = FakeClock()
+    private let storage = QueueStorageFake()
+    private let clock = ClockFake()
 
     func test_wholeBatchFailure_waitsThenRetriesAndDelivers() async throws {
         try await store("a")
-        let transport = FakeTransport(responses: [.throwError])
+        let transport = TransportSpy(responses: [.throwError])
         let flusher = makeFlusher(transport: transport)
 
         await flusher.flush()
@@ -31,7 +31,7 @@ final class FlusherRetryTests: XCTestCase {
 
     func test_waitsGrowExponentially() async throws {
         try await store("a")
-        let transport = FakeTransport(responses: [.throwError, .throwError, .throwError])
+        let transport = TransportSpy(responses: [.throwError, .throwError, .throwError])
         let flusher = makeFlusher(transport: transport)
 
         await flusher.flush()
@@ -44,8 +44,8 @@ final class FlusherRetryTests: XCTestCase {
 
     func test_givesUpAfterMaxRetries_andKeepsEvents() async throws {
         try await store("a")
-        let responses = Array(repeating: FakeTransport.Response.throwError, count: 5)
-        let transport = FakeTransport(responses: responses)
+        let responses = Array(repeating: TransportSpy.Response.throwError, count: 5)
+        let transport = TransportSpy(responses: responses)
         let flusher = makeFlusher(
             transport: transport,
             backoff: BackoffPolicy(
@@ -66,8 +66,8 @@ final class FlusherRetryTests: XCTestCase {
 
     func test_waitIsCappedAtMaxDelay() async throws {
         try await store("a")
-        let responses = Array(repeating: FakeTransport.Response.throwError, count: 4)
-        let transport = FakeTransport(responses: responses)
+        let responses = Array(repeating: TransportSpy.Response.throwError, count: 4)
+        let transport = TransportSpy(responses: responses)
         let flusher = makeFlusher(
             transport: transport,
             backoff: BackoffPolicy(baseDelay: 1, maxDelay: 3, maxRetries: 4)
@@ -83,7 +83,7 @@ final class FlusherRetryTests: XCTestCase {
 
     func test_jitterScalesTheWait() async throws {
         try await store("a")
-        let transport = FakeTransport(responses: [.throwError])
+        let transport = TransportSpy(responses: [.throwError])
         let flusher = makeFlusher(transport: transport, jitter: 0.5)
 
         await flusher.flush()
@@ -94,7 +94,7 @@ final class FlusherRetryTests: XCTestCase {
     func test_retryableEvents_areRetriedAfterWaiting() async throws {
         try await store("a", "b")
         let result = DeliveryResult(delivered: ["a"], retryable: ["b"])
-        let transport = FakeTransport(responses: [.result(result)])
+        let transport = TransportSpy(responses: [.result(result)])
         let flusher = makeFlusher(transport: transport)
 
         await flusher.flush()
@@ -108,7 +108,7 @@ final class FlusherRetryTests: XCTestCase {
 
     func test_successResetsTheFailureCount() async throws {
         try await store("a", "b")
-        let transport = FakeTransport(responses: [.throwError, .deliverAll, .throwError])
+        let transport = TransportSpy(responses: [.throwError, .deliverAll, .throwError])
         let flusher = makeFlusher(transport: transport, batchSize: 1)
 
         await flusher.flush()
@@ -118,8 +118,8 @@ final class FlusherRetryTests: XCTestCase {
 
     func test_logsFailureRetryAndSuccess() async throws {
         try await store("a")
-        let logger = RecordingLogger()
-        let transport = FakeTransport(responses: [.throwError])
+        let logger = SDKLoggerSpy()
+        let transport = TransportSpy(responses: [.throwError])
         let flusher = makeFlusher(transport: transport, logger: logger)
 
         await flusher.flush()
@@ -133,8 +133,8 @@ final class FlusherRetryTests: XCTestCase {
 
     func test_logsGivingUp() async throws {
         try await store("a")
-        let logger = RecordingLogger()
-        let transport = FakeTransport(responses: [.throwError, .throwError])
+        let logger = SDKLoggerSpy()
+        let transport = TransportSpy(responses: [.throwError, .throwError])
         let flusher = makeFlusher(
             transport: transport,
             backoff: BackoffPolicy(baseDelay: 1, maxDelay: 60, maxRetries: 1),
@@ -149,7 +149,7 @@ final class FlusherRetryTests: XCTestCase {
     // MARK: - Helper
 
     private func makeFlusher(
-        transport: FakeTransport,
+        transport: TransportSpy,
         batchSize: Int = 50,
         backoff: BackoffPolicy = BackoffPolicy(
             baseDelay: 1,
