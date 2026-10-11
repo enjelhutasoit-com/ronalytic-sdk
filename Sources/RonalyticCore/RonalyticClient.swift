@@ -30,11 +30,7 @@ public final class RonalyticClient: Sendable {
         logger: any SDKLogger = NoOpLogger(),
         lifecycleObserver: (any LifecycleObserver)? = nil
     ) {
-        self.optOutStore = optOutStore
-        self.clock = clock
-        self.idGenerator = idGenerator
         let tracker = SessionTracker(timeout: sessionTimeout, idGenerator: idGenerator)
-        self.sessionTracker = tracker
         let bounded = BoundedQueueStorage(base: storage, capacity: queueCapacity, policy: dropPolicy)
         let flusher = transport.map {
             Flusher(
@@ -54,36 +50,65 @@ public final class RonalyticClient: Sendable {
             logger: logger
         )
         let (stream, continuation) = AsyncStream.makeStream(of: ClientCommand.self)
+
+        self.optOutStore = optOutStore
+        self.clock = clock
+        self.idGenerator = idGenerator
+        self.sessionTracker = tracker
         self.continuation = continuation
+        self.timerTask = flusher == nil
+        ? nil
+        : Self.makeTimer(interval: flushInterval, clock: clock, continuation: continuation)
+        self.lifecycleTask = Self.makeLifecycleTask(
+            observer: lifecycleObserver,
+            tracker: tracker,
+            clock: clock,
+            continuation: continuation
+        )
+        Self.startProcessing(stream, with: processor)
+    }
 
-        if let flushInterval, flusher != nil {
-            self.timerTask = Task {
-                await FlushTimer.run(every: flushInterval, clock: clock) {
+    private static func makeTimer(
+        interval: Duration?,
+        clock: any SDKClock,
+        continuation: AsyncStream<ClientCommand>.Continuation
+    ) -> Task<Void, Never>? {
+        guard let interval else { return nil }
+
+        return Task {
+            await FlushTimer.run(every: interval, clock: clock) {
+                continuation.yield(.flush)
+            }
+        }
+    }
+
+    private static func makeLifecycleTask(
+        observer: (any LifecycleObserver)?,
+        tracker: SessionTracker,
+        clock: any SDKClock,
+        continuation: AsyncStream<ClientCommand>.Continuation
+    ) -> Task<Void, Never>? {
+        guard let observer else { return nil }
+
+        let lifecycleEvents = observer.events()
+        return Task {
+            for await event in lifecycleEvents {
+                switch event {
+                case .didEnterBackground, .willTerminate:
+                    // Events are already on disk. This only uploads them.
                     continuation.yield(.flush)
+                case .willEnterForeground:
+                    // Opening the app is activity: it extends or restarts the session.
+                    _ = tracker.sessionID(at: clock.now())
                 }
             }
-        } else {
-            self.timerTask = nil
         }
-        
-        if let lifecycleObserver {
-            let lifecycleEvents = lifecycleObserver.events()
-            self.lifecycleTask = Task {
-                for await event in lifecycleEvents {
-                    switch event {
-                    case .didEnterBackground, .willTerminate:
-                        // Events are already on disk. This only uploads them.
-                        continuation.yield(.flush)
-                    case .willEnterForeground:
-                        // Opening the app is activity: it extends or restarts the session.
-                        _ = tracker.sessionID(at: clock.now())
-                    }
-                }
-            }
-        } else {
-            self.lifecycleTask = nil
-        }
+    }
 
+    private static func startProcessing(
+        _ stream: AsyncStream<ClientCommand>,
+        with processor: EventProcessor
+    ) {
         Task {
             for await command in stream {
                 await processor.handle(command)
@@ -185,7 +210,7 @@ public final class RonalyticClient: Sendable {
             continuation.yield(.barrier(barrier))
         }
     }
-    
+
     /// Suspends until the lifecycle stream has ended and every event was handled.
     /// Only returns when the observer's stream finishes. Used by tests.
     func waitUntilLifecycleHandled() async {
