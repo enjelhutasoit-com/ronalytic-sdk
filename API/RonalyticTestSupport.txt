@@ -1,0 +1,62 @@
+BackgroundTaskRunnerSpy :: swift.class :: final class BackgroundTaskRunnerSpy
+BackgroundTaskRunnerSpy.init(afterWork:) :: swift.init :: init(afterWork: (() async -> Void)? = nil)
+BackgroundTaskRunnerSpy.run(_:) :: swift.method :: func run(_ work: () async -> Void) async
+BackgroundTaskRunnerSpy.runCount :: swift.property :: var runCount: Int { get }
+ClockFake :: swift.class :: final class ClockFake
+ClockFake.advance(by:) :: swift.method :: func advance(by seconds: TimeInterval)
+ClockFake.init(start:) :: swift.init :: init(start: Date = Date(timeIntervalSince1970: 0))
+ClockFake.now() :: swift.method :: func now() -> Date
+ClockFake.sleep(for:) :: swift.method :: func sleep(for duration: Duration) async throws
+ClockFake.sleeps :: swift.property :: var sleeps: [Duration] { get }
+ConsentProviderFake :: swift.class :: actor ConsentProviderFake
+ConsentProviderFake.init(_:) :: swift.init :: init(_ status: ConsentStatus = .granted)
+ConsentProviderFake.setStatus(_:) :: swift.method :: func setStatus(_ status: ConsentStatus)
+ConsentProviderFake.status() :: swift.method :: func status() async -> ConsentStatus
+ContextProviderStub :: swift.struct :: struct ContextProviderStub
+ContextProviderStub.current() :: swift.method :: func current() async -> EnvironmentContext
+ContextProviderStub.init(_:) :: swift.init :: init(_ context: EnvironmentContext = .fixture)
+EnvironmentContext.fixture :: swift.type.property :: static let fixture: EnvironmentContext
+Event.fixture(id:name:) :: swift.type.method :: static func fixture(id: String = "evt-1", name: String = "test") -> Event
+IDGeneratorFake :: swift.class :: final class IDGeneratorFake
+IDGeneratorFake.init(prefix:) :: swift.init :: init(prefix: String = "id")
+IDGeneratorFake.makeID() :: swift.method :: func makeID() -> String
+LifecycleObserverFake :: swift.class :: final class LifecycleObserverFake
+LifecycleObserverFake.events() :: swift.method :: func events() -> AsyncStream<LifecycleEvent>
+LifecycleObserverFake.finish() :: swift.method :: func finish()
+LifecycleObserverFake.init() :: swift.init :: init()
+LifecycleObserverFake.send(_:) :: swift.method :: func send(_ event: LifecycleEvent)
+LogEntry :: swift.struct :: struct LogEntry
+LogEntry.init(_:_:) :: swift.init :: init(_ level: LogLevel, _ message: String)
+LogEntry.level :: swift.property :: let level: LogLevel
+LogEntry.message :: swift.property :: let message: String
+NetworkStateProviderFake :: swift.class :: actor NetworkStateProviderFake
+NetworkStateProviderFake.current() :: swift.method :: func current() async -> NetworkState
+NetworkStateProviderFake.init(_:) :: swift.init :: init(_ state: NetworkState = .wifi)
+NetworkStateProviderFake.setState(_:) :: swift.method :: func setState(_ newState: NetworkState)
+QueueStorageContract :: swift.enum :: enum QueueStorageContract
+QueueStorageContract.Factory :: swift.typealias :: typealias Factory = () -> any QueueStorage
+QueueStorageContract.emptyStorageHasNothing(_:file:line:) :: swift.type.method :: static func emptyStorageHasNothing(_ make: () -> any QueueStorage, file: StaticString = #filePath, line: UInt = #line) async throws
+QueueStorageContract.peekDoesNotRemove(_:file:line:) :: swift.type.method :: static func peekDoesNotRemove(_ make: () -> any QueueStorage, file: StaticString = #filePath, line: UInt = #line) async throws
+QueueStorageContract.peekRespectsLimit(_:file:line:) :: swift.type.method :: static func peekRespectsLimit(_ make: () -> any QueueStorage, file: StaticString = #filePath, line: UInt = #line) async throws
+QueueStorageContract.peekReturnsAppendOrder(_:file:line:) :: swift.type.method :: static func peekReturnsAppendOrder(_ make: () -> any QueueStorage, file: StaticString = #filePath, line: UInt = #line) async throws
+QueueStorageContract.removeDeletesOnlyGivenIDs(_:file:line:) :: swift.type.method :: static func removeDeletesOnlyGivenIDs(_ make: () -> any QueueStorage, file: StaticString = #filePath, line: UInt = #line) async throws
+QueueStorageContract.removeUnknownIDsIsNoOp(_:file:line:) :: swift.type.method :: static func removeUnknownIDsIsNoOp(_ make: () -> any QueueStorage, file: StaticString = #filePath, line: UInt = #line) async throws
+QueueStorageFake :: swift.class :: actor QueueStorageFake
+QueueStorageFake.append(_:) :: swift.method :: func append(_ newEvents: [Event]) async throws
+QueueStorageFake.count() :: swift.method :: func count() async throws -> Int
+QueueStorageFake.init() :: swift.init :: init()
+QueueStorageFake.peek(limit:) :: swift.method :: func peek(limit: Int) async throws -> [Event]
+QueueStorageFake.remove(ids:) :: swift.method :: func remove(ids: Set<String>) async throws
+SDKLoggerSpy :: swift.class :: final class SDKLoggerSpy
+SDKLoggerSpy.entries :: swift.property :: var entries: [LogEntry] { get }
+SDKLoggerSpy.init() :: swift.init :: init()
+SDKLoggerSpy.log(_:_:) :: swift.method :: func log(_ level: LogLevel, _ message: @autoclosure () -> String)
+TransportSpy :: swift.class :: actor TransportSpy
+TransportSpy.Failure :: swift.struct :: struct Failure
+TransportSpy.Response :: swift.enum :: enum Response
+TransportSpy.Response.deliverAll :: swift.enum.case :: case deliverAll
+TransportSpy.Response.result(_:) :: swift.enum.case :: case result(DeliveryResult)
+TransportSpy.Response.throwError :: swift.enum.case :: case throwError
+TransportSpy.init(responses:) :: swift.init :: init(responses: [TransportSpy.Response] = [])
+TransportSpy.send(_:) :: swift.method :: func send(_ batch: [Event]) async throws -> DeliveryResult
+TransportSpy.sentBatches :: swift.property :: var sentBatches: [[Event]] { get }

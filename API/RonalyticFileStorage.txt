@@ -1,0 +1,11 @@
+            FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: $0)
+        }) throws -> FileQueueStorage
+AppGroupError :: swift.enum :: enum AppGroupError
+AppGroupError.containerUnavailable(_:) :: swift.enum.case :: case containerUnavailable(String)
+FileQueueStorage :: swift.class :: actor FileQueueStorage
+FileQueueStorage.appGroup(identifier:writerID:folderName:containerProvider:) :: swift.type.method :: static func appGroup(identifier: String, writerID: String, folderName: String = "Ronalytic", containerProvider: (String) -> URL? = {
+FileQueueStorage.append(_:) :: swift.method :: func append(_ events: [Event]) async throws
+FileQueueStorage.count() :: swift.method :: func count() async throws -> Int
+FileQueueStorage.init(directory:writerID:compactionThreshold:) :: swift.init :: init(directory: URL, writerID: String = UUID().uuidString, compactionThreshold: Int = 100)
+FileQueueStorage.peek(limit:) :: swift.method :: func peek(limit: Int) async throws -> [Event]
+FileQueueStorage.remove(ids:) :: swift.method :: func remove(ids: Set<String>) async throws

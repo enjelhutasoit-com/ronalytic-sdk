@@ -1,0 +1,214 @@
+BackgroundTaskRunner :: swift.protocol :: protocol BackgroundTaskRunner : Sendable
+BackgroundTaskRunner.run(_:) :: swift.method :: func run(_ work: () async -> Void) async
+BackoffPolicy :: swift.struct :: struct BackoffPolicy
+BackoffPolicy.baseDelay :: swift.property :: let baseDelay: TimeInterval
+BackoffPolicy.default :: swift.type.property :: static let `default`: BackoffPolicy
+BackoffPolicy.init(baseDelay:maxDelay:maxRetries:) :: swift.init :: init(baseDelay: TimeInterval, maxDelay: TimeInterval, maxRetries: Int)
+BackoffPolicy.maxDelay :: swift.property :: let maxDelay: TimeInterval
+BackoffPolicy.maxRetries :: swift.property :: let maxRetries: Int
+BackoffPolicy.noRetry :: swift.type.property :: static let noRetry: BackoffPolicy
+ConsentProvider :: swift.protocol :: protocol ConsentProvider : Sendable
+ConsentProvider.status() :: swift.method :: func status() async -> ConsentStatus
+ConsentStatus :: swift.enum :: enum ConsentStatus
+ConsentStatus.denied :: swift.enum.case :: case denied
+ConsentStatus.granted :: swift.enum.case :: case granted
+ConsentStatus.unknown :: swift.enum.case :: case unknown
+ConsoleDestination :: swift.struct :: struct ConsoleDestination
+ConsoleDestination.init(output:) :: swift.init :: init(output: @escaping (String) -> Void = { print($0) })
+ConsoleDestination.name :: swift.property :: let name: String
+ConsoleDestination.process(_:) :: swift.method :: func process(_ event: Event) async -> Event?
+ConsoleLogger :: swift.struct :: struct ConsoleLogger
+ConsoleLogger.init(level:output:) :: swift.init :: init(level: LogLevel = .verbose, output: @escaping (String) -> Void = { print($0) })
+ConsoleLogger.log(_:_:) :: swift.method :: func log(_ messageLevel: LogLevel, _ message: @autoclosure () -> String)
+ContextEnricher :: swift.struct :: struct ContextEnricher
+ContextEnricher.init(contextProvider:networkStateProvider:) :: swift.init :: init(contextProvider: any ContextProvider = SystemContextProvider(), networkStateProvider: any NetworkStateProvider = UnknownNetworkStateProvider())
+ContextEnricher.name :: swift.property :: let name: String
+ContextEnricher.process(_:) :: swift.method :: func process(_ event: Event) async -> Event?
+ContextProvider :: swift.protocol :: protocol ContextProvider : Sendable
+ContextProvider.current() :: swift.method :: func current() async -> EnvironmentContext
+DeliveryResult :: swift.struct :: struct DeliveryResult
+DeliveryResult.delivered :: swift.property :: let delivered: Set<String>
+DeliveryResult.init(delivered:retryable:rejected:) :: swift.init :: init(delivered: Set<String>, retryable: Set<String> = [], rejected: Set<String> = [])
+DeliveryResult.rejected :: swift.property :: let rejected: Set<String>
+DeliveryResult.retryable :: swift.property :: let retryable: Set<String>
+DropPolicy :: swift.enum :: enum DropPolicy
+DropPolicy.dropNewest :: swift.enum.case :: case dropNewest
+DropPolicy.dropOldest :: swift.enum.case :: case dropOldest
+EnvironmentContext :: swift.struct :: struct EnvironmentContext
+EnvironmentContext.appBuild :: swift.property :: let appBuild: String
+EnvironmentContext.appVersion :: swift.property :: let appVersion: String
+EnvironmentContext.bundleID :: swift.property :: let bundleID: String
+EnvironmentContext.init(osName:osVersion:model:locale:appVersion:appBuild:bundleID:) :: swift.init :: init(osName: String, osVersion: String, model: String, locale: String, appVersion: String, appBuild: String, bundleID: String)
+EnvironmentContext.locale :: swift.property :: let locale: String
+EnvironmentContext.model :: swift.property :: let model: String
+EnvironmentContext.osName :: swift.property :: let osName: String
+EnvironmentContext.osVersion :: swift.property :: let osVersion: String
+Event :: swift.struct :: struct Event
+Event.context :: swift.property :: var context: [String : PropertyValue]
+Event.currentSchemaVersion :: swift.type.property :: static let currentSchemaVersion: Int
+Event.id :: swift.property :: let id: String
+Event.init(from:) :: swift.init :: init(from decoder: any Decoder) throws
+Event.init(id:name:type:timestamp:sessionID:userID:properties:context:schemaVersion:) :: swift.init :: init(id: String, name: String, type: EventType, timestamp: Date, sessionID: String, userID: String?, properties: [String : PropertyValue], context: [String : PropertyValue] = [:], schemaVersion: Int = Event.currentSchemaVersion)
+Event.name :: swift.property :: var name: String
+Event.properties :: swift.property :: var properties: [String : PropertyValue]
+Event.schemaVersion :: swift.property :: let schemaVersion: Int
+Event.sessionID :: swift.property :: let sessionID: String
+Event.timestamp :: swift.property :: let timestamp: Date
+Event.type :: swift.property :: let type: EventType
+Event.userID :: swift.property :: var userID: String?
+EventType :: swift.enum :: enum EventType
+EventType.identify :: swift.enum.case :: case identify
+EventType.init(rawValue:) :: swift.init :: init?(rawValue: String)
+EventType.screen :: swift.enum.case :: case screen
+EventType.track :: swift.enum.case :: case track
+IDGenerator :: swift.protocol :: protocol IDGenerator : Sendable
+IDGenerator.makeID() :: swift.method :: func makeID() -> String
+ImmediateBackgroundTaskRunner :: swift.struct :: struct ImmediateBackgroundTaskRunner
+ImmediateBackgroundTaskRunner.init() :: swift.init :: init()
+ImmediateBackgroundTaskRunner.run(_:) :: swift.method :: func run(_ work: () async -> Void) async
+InMemoryOptOutStore :: swift.class :: final class InMemoryOptOutStore
+InMemoryOptOutStore.init() :: swift.init :: init()
+InMemoryOptOutStore.isOptedOut() :: swift.method :: func isOptedOut() -> Bool
+InMemoryOptOutStore.setOptedOut(_:) :: swift.method :: func setOptedOut(_ value: Bool)
+LifecycleEvent :: swift.enum :: enum LifecycleEvent
+LifecycleEvent.didEnterBackground :: swift.enum.case :: case didEnterBackground
+LifecycleEvent.willEnterForeground :: swift.enum.case :: case willEnterForeground
+LifecycleEvent.willTerminate :: swift.enum.case :: case willTerminate
+LifecycleObserver :: swift.protocol :: protocol LifecycleObserver : Sendable
+LifecycleObserver.events() :: swift.method :: func events() -> AsyncStream<LifecycleEvent>
+LogLevel :: swift.enum :: enum LogLevel
+LogLevel.<(_:_:) :: swift.func.op :: static func < (lhs: LogLevel, rhs: LogLevel) -> Bool
+LogLevel.error :: swift.enum.case :: case error
+LogLevel.info :: swift.enum.case :: case info
+LogLevel.init(rawValue:) :: swift.init :: init?(rawValue: Int)
+LogLevel.off :: swift.enum.case :: case off
+LogLevel.verbose :: swift.enum.case :: case verbose
+MetricsSnapshot :: swift.struct :: struct MetricsSnapshot
+MetricsSnapshot.batchesSent :: swift.property :: var batchesSent: Int { get }
+MetricsSnapshot.eventsDelivered :: swift.property :: var eventsDelivered: Int { get }
+MetricsSnapshot.eventsDroppedByOptOut :: swift.property :: var eventsDroppedByOptOut: Int { get }
+MetricsSnapshot.eventsDroppedByPlugin :: swift.property :: var eventsDroppedByPlugin: Int { get }
+MetricsSnapshot.eventsDroppedByQueue :: swift.property :: var eventsDroppedByQueue: Int { get }
+MetricsSnapshot.eventsRejected :: swift.property :: var eventsRejected: Int { get }
+MetricsSnapshot.eventsStored :: swift.property :: var eventsStored: Int { get }
+MetricsSnapshot.flushes :: swift.property :: var flushes: Int { get }
+MetricsSnapshot.init() :: swift.init :: init()
+MetricsSnapshot.lastFlushDuration :: swift.property :: var lastFlushDuration: TimeInterval? { get }
+MetricsSnapshot.longestFlushDuration :: swift.property :: var longestFlushDuration: TimeInterval { get }
+MetricsSnapshot.retries :: swift.property :: var retries: Int { get }
+MetricsSnapshot.sendFailures :: swift.property :: var sendFailures: Int { get }
+MetricsSnapshot.storageFailures :: swift.property :: var storageFailures: Int { get }
+MetricsSnapshot.summary :: swift.property :: var summary: String { get }
+NetworkState :: swift.enum :: enum NetworkState
+NetworkState.cellular :: swift.enum.case :: case cellular
+NetworkState.init(rawValue:) :: swift.init :: init?(rawValue: String)
+NetworkState.offline :: swift.enum.case :: case offline
+NetworkState.unknown :: swift.enum.case :: case unknown
+NetworkState.wifi :: swift.enum.case :: case wifi
+NetworkState.wired :: swift.enum.case :: case wired
+NetworkStateProvider :: swift.protocol :: protocol NetworkStateProvider : Sendable
+NetworkStateProvider.current() :: swift.method :: func current() async -> NetworkState
+NoOpLogger :: swift.struct :: struct NoOpLogger
+NoOpLogger.init() :: swift.init :: init()
+NoOpLogger.log(_:_:) :: swift.method :: func log(_ level: LogLevel, _ message: @autoclosure () -> String)
+OptOutStore :: swift.protocol :: protocol OptOutStore : Sendable
+OptOutStore.isOptedOut() :: swift.method :: func isOptedOut() -> Bool
+OptOutStore.setOptedOut(_:) :: swift.method :: func setOptedOut(_ value: Bool)
+Plugin :: swift.protocol :: protocol Plugin : Sendable
+Plugin.name :: swift.property :: var name: String { get }
+Plugin.process(_:) :: swift.method :: func process(_ event: Event) async -> Event?
+PropertyValue :: swift.enum :: enum PropertyValue
+PropertyValue.bool(_:) :: swift.enum.case :: case bool(Bool)
+PropertyValue.double(_:) :: swift.enum.case :: case double(Double)
+PropertyValue.encode(to:) :: swift.method :: func encode(to encoder: any Encoder) throws
+PropertyValue.init(booleanLiteral:) :: swift.init :: init(booleanLiteral value: Bool)
+PropertyValue.init(floatLiteral:) :: swift.init :: init(floatLiteral value: Double)
+PropertyValue.init(from:) :: swift.init :: init(from decoder: any Decoder) throws
+PropertyValue.init(integerLiteral:) :: swift.init :: init(integerLiteral value: Int)
+PropertyValue.init(stringLiteral:) :: swift.init :: init(stringLiteral value: String)
+PropertyValue.int(_:) :: swift.enum.case :: case int(Int)
+PropertyValue.string(_:) :: swift.enum.case :: case string(String)
+QueueStorage :: swift.protocol :: protocol QueueStorage : Sendable
+QueueStorage.append(_:) :: swift.method :: func append(_ events: [Event]) async throws
+QueueStorage.count() :: swift.method :: func count() async throws -> Int
+QueueStorage.peek(limit:) :: swift.method :: func peek(limit: Int) async throws -> [Event]
+QueueStorage.remove(ids:) :: swift.method :: func remove(ids: Set<String>) async throws
+RedactionRule :: swift.struct :: struct RedactionRule
+RedactionRule.init(_:) :: swift.init :: init(_ apply: @escaping (String, PropertyValue) -> PropertyValue?)
+RedactionRule.maskEmails :: swift.type.property :: static let maskEmails: RedactionRule
+RedactionRule.maskPhoneNumbers :: swift.type.property :: static let maskPhoneNumbers: RedactionRule
+RedactionRule.removeKeys(_:) :: swift.type.method :: static func removeKeys(_ keys: Set<String>) -> RedactionRule
+RonalyticClient :: swift.class :: final class RonalyticClient
+RonalyticClient.diagnostics() :: swift.method :: func diagnostics() -> MetricsSnapshot
+RonalyticClient.flush() :: swift.method :: func flush()
+RonalyticClient.identify(_:traits:) :: swift.method :: func identify(_ userID: String, traits: [String : PropertyValue] = [:])
+RonalyticClient.init(config:) :: swift.init :: convenience init(config: RonalyticConfig)
+RonalyticClient.isOptedOut :: swift.property :: var isOptedOut: Bool { get }
+RonalyticClient.optIn() :: swift.method :: func optIn()
+RonalyticClient.optOut() :: swift.method :: func optOut()
+RonalyticClient.screen(_:properties:) :: swift.method :: func screen(_ name: String, properties: [String : PropertyValue] = [:])
+RonalyticClient.track(_:properties:) :: swift.method :: func track(_ name: String, properties: [String : PropertyValue] = [:])
+RonalyticConfig :: swift.struct :: struct RonalyticConfig
+RonalyticConfig.allowWhenConsentUnknown :: swift.property :: var allowWhenConsentUnknown: Bool
+RonalyticConfig.backgroundTaskRunner :: swift.property :: var backgroundTaskRunner: any BackgroundTaskRunner
+RonalyticConfig.backoff :: swift.property :: var backoff: BackoffPolicy
+RonalyticConfig.batchSize :: swift.property :: var batchSize: Int
+RonalyticConfig.clock :: swift.property :: var clock: any SDKClock
+RonalyticConfig.collectContext :: swift.property :: var collectContext: Bool
+RonalyticConfig.consentProvider :: swift.property :: var consentProvider: (any ConsentProvider)?
+RonalyticConfig.contextProvider :: swift.property :: var contextProvider: any ContextProvider
+RonalyticConfig.dropPolicy :: swift.property :: var dropPolicy: DropPolicy
+RonalyticConfig.flushInterval :: swift.property :: var flushInterval: Duration?
+RonalyticConfig.idGenerator :: swift.property :: var idGenerator: any IDGenerator
+RonalyticConfig.init(storage:transport:plugins:batchSize:flushInterval:backoff:queueCapacity:dropPolicy:sessionTimeout:collectContext:contextProvider:networkStateProvider:consentProvider:allowWhenConsentUnknown:redactionRules:optOutStore:logger:lifecycleObserver:backgroundTaskRunner:clock:idGenerator:) :: swift.init :: init(storage: any QueueStorage, transport: (any Transport)? = nil, plugins: [any Plugin] = [], batchSize: Int = 50, flushInterval: Duration? = .seconds(30), backoff: BackoffPolicy = .default, queueCapacity: Int = 1_000, dropPolicy: DropPolicy = .dropOldest, sessionTimeout: TimeInterval = 1_800, collectContext: Bool = true, contextProvider: any ContextProvider = SystemContextProvider(), networkStateProvider: any NetworkStateProvider = UnknownNetworkStateProvider(), consentProvider: (any ConsentProvider)? = nil, allowWhenConsentUnknown: Bool = false, redactionRules: [RedactionRule] = [], optOutStore: any OptOutStore = UserDefaultsOptOutStore(), logger: any SDKLogger = NoOpLogger(), lifecycleObserver: (any LifecycleObserver)? = nil, backgroundTaskRunner: any BackgroundTaskRunner = ImmediateBackgroundTaskRunner(), clock: any SDKClock = SystemClock(), idGenerator: any IDGenerator = UUIDGenerator())
+RonalyticConfig.lifecycleObserver :: swift.property :: var lifecycleObserver: (any LifecycleObserver)?
+RonalyticConfig.logger :: swift.property :: var logger: any SDKLogger
+RonalyticConfig.networkStateProvider :: swift.property :: var networkStateProvider: any NetworkStateProvider
+RonalyticConfig.optOutStore :: swift.property :: var optOutStore: any OptOutStore
+RonalyticConfig.plugins :: swift.property :: var plugins: [any Plugin]
+RonalyticConfig.queueCapacity :: swift.property :: var queueCapacity: Int
+RonalyticConfig.redactionRules :: swift.property :: var redactionRules: [RedactionRule]
+RonalyticConfig.sessionTimeout :: swift.property :: var sessionTimeout: TimeInterval
+RonalyticConfig.storage :: swift.property :: var storage: any QueueStorage
+RonalyticConfig.transport :: swift.property :: var transport: (any Transport)?
+RonalyticExtension :: swift.class :: final class RonalyticExtension
+RonalyticExtension.identify(_:traits:) :: swift.method :: func identify(_ userID: String, traits: [String : PropertyValue] = [:])
+RonalyticExtension.init(config:) :: swift.init :: init(config: RonalyticConfig)
+RonalyticExtension.screen(_:properties:) :: swift.method :: func screen(_ name: String, properties: [String : PropertyValue] = [:])
+RonalyticExtension.track(_:properties:) :: swift.method :: func track(_ name: String, properties: [String : PropertyValue] = [:])
+RonalyticExtension.waitUntilStored() :: swift.method :: func waitUntilStored() async
+RonalyticInfo :: swift.enum :: enum RonalyticInfo
+RonalyticInfo.version :: swift.type.property :: static let version: String
+RonalyticSDK :: swift.enum :: enum RonalyticSDK
+RonalyticSDK.configure(_:) :: swift.type.method :: static func configure(_ config: RonalyticConfig)
+RonalyticSDK.diagnostics() :: swift.type.method :: static func diagnostics() -> MetricsSnapshot?
+RonalyticSDK.flush() :: swift.type.method :: static func flush()
+RonalyticSDK.identify(_:traits:) :: swift.type.method :: static func identify(_ userID: String, traits: [String : PropertyValue] = [:])
+RonalyticSDK.optIn() :: swift.type.method :: static func optIn()
+RonalyticSDK.optOut() :: swift.type.method :: static func optOut()
+RonalyticSDK.screen(_:properties:) :: swift.type.method :: static func screen(_ name: String, properties: [String : PropertyValue] = [:])
+RonalyticSDK.track(_:properties:) :: swift.type.method :: static func track(_ name: String, properties: [String : PropertyValue] = [:])
+SDKClock :: swift.protocol :: protocol SDKClock : Sendable
+SDKClock.now() :: swift.method :: func now() -> Date
+SDKClock.sleep(for:) :: swift.method :: func sleep(for duration: Duration) async throws
+SDKLogger :: swift.protocol :: protocol SDKLogger : Sendable
+SDKLogger.log(_:_:) :: swift.method :: func log(_ level: LogLevel, _ message: @autoclosure () -> String)
+SystemClock :: swift.struct :: struct SystemClock
+SystemClock.init() :: swift.init :: init()
+SystemClock.now() :: swift.method :: func now() -> Date
+SystemClock.sleep(for:) :: swift.method :: func sleep(for duration: Duration) async throws
+SystemContextProvider :: swift.struct :: struct SystemContextProvider
+SystemContextProvider.current() :: swift.method :: func current() async -> EnvironmentContext
+SystemContextProvider.init() :: swift.init :: init()
+Transport :: swift.protocol :: protocol Transport : Sendable
+Transport.send(_:) :: swift.method :: func send(_ batch: [Event]) async throws -> DeliveryResult
+UUIDGenerator :: swift.struct :: struct UUIDGenerator
+UUIDGenerator.init() :: swift.init :: init()
+UUIDGenerator.makeID() :: swift.method :: func makeID() -> String
+UnknownNetworkStateProvider :: swift.struct :: struct UnknownNetworkStateProvider
+UnknownNetworkStateProvider.current() :: swift.method :: func current() async -> NetworkState
+UnknownNetworkStateProvider.init() :: swift.init :: init()
+UserDefaultsOptOutStore :: swift.struct :: struct UserDefaultsOptOutStore
+UserDefaultsOptOutStore.init(defaults:key:) :: swift.init :: init(defaults: UserDefaults = .standard, key: String = "com.ronalytic.optedOut")
+UserDefaultsOptOutStore.isOptedOut() :: swift.method :: func isOptedOut() -> Bool
+UserDefaultsOptOutStore.setOptedOut(_:) :: swift.method :: func setOptedOut(_ value: Bool)

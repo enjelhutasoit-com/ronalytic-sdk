@@ -1,0 +1,17 @@
+BackgroundTaskAPI :: swift.protocol :: protocol BackgroundTaskAPI : Sendable
+BackgroundTaskAPI.beginTask(name:onExpiration:) :: swift.method :: func beginTask(name: String, onExpiration: @escaping () -> Void) async -> Int?
+BackgroundTaskAPI.endTask(_:) :: swift.method :: func endTask(_ id: Int)
+NetworkPathStateProvider :: swift.class :: final class NetworkPathStateProvider
+NetworkPathStateProvider.current() :: swift.method :: func current() async -> NetworkState
+NetworkPathStateProvider.init() :: swift.init :: convenience init()
+NotificationLifecycleObserver :: swift.struct :: struct NotificationLifecycleObserver
+NotificationLifecycleObserver.Names :: swift.struct :: struct Names
+NotificationLifecycleObserver.Names.background :: swift.property :: let background: Notification.Name
+NotificationLifecycleObserver.Names.foreground :: swift.property :: let foreground: Notification.Name
+NotificationLifecycleObserver.Names.init(background:foreground:terminate:) :: swift.init :: init(background: Notification.Name, foreground: Notification.Name, terminate: Notification.Name)
+NotificationLifecycleObserver.Names.terminate :: swift.property :: let terminate: Notification.Name
+NotificationLifecycleObserver.events() :: swift.method :: func events() -> AsyncStream<LifecycleEvent>
+NotificationLifecycleObserver.init(names:center:) :: swift.init :: init(names: NotificationLifecycleObserver.Names, center: NotificationCenter = .default)
+SystemBackgroundTaskRunner :: swift.struct :: struct SystemBackgroundTaskRunner
+SystemBackgroundTaskRunner.init(api:) :: swift.init :: init(api: any BackgroundTaskAPI)
+SystemBackgroundTaskRunner.run(_:) :: swift.method :: func run(_ work: () async -> Void) async
