@@ -12,6 +12,7 @@ public final class RonalyticClient: Sendable {
     private let sessionTracker: SessionTracker
     private let timerTask: Task<Void, Never>?
     private let optOutStore: any OptOutStore
+    private let lifecycleTask: Task<Void, Never>?
 
     init(
         storage: any QueueStorage,
@@ -26,12 +27,14 @@ public final class RonalyticClient: Sendable {
         dropPolicy: DropPolicy = .dropOldest,
         sessionTimeout: TimeInterval = 1_800,
         optOutStore: any OptOutStore = InMemoryOptOutStore(),
-        logger: any SDKLogger = NoOpLogger()
+        logger: any SDKLogger = NoOpLogger(),
+        lifecycleObserver: (any LifecycleObserver)? = nil
     ) {
         self.optOutStore = optOutStore
         self.clock = clock
         self.idGenerator = idGenerator
-        self.sessionTracker = SessionTracker(timeout: sessionTimeout, idGenerator: idGenerator)
+        let tracker = SessionTracker(timeout: sessionTimeout, idGenerator: idGenerator)
+        self.sessionTracker = tracker
         let bounded = BoundedQueueStorage(base: storage, capacity: queueCapacity, policy: dropPolicy)
         let flusher = transport.map {
             Flusher(
@@ -61,6 +64,24 @@ public final class RonalyticClient: Sendable {
             }
         } else {
             self.timerTask = nil
+        }
+        
+        if let lifecycleObserver {
+            let lifecycleEvents = lifecycleObserver.events()
+            self.lifecycleTask = Task {
+                for await event in lifecycleEvents {
+                    switch event {
+                    case .didEnterBackground, .willTerminate:
+                        // Events are already on disk. This only uploads them.
+                        continuation.yield(.flush)
+                    case .willEnterForeground:
+                        // Opening the app is activity: it extends or restarts the session.
+                        _ = tracker.sessionID(at: clock.now())
+                    }
+                }
+            }
+        } else {
+            self.lifecycleTask = nil
         }
 
         Task {
@@ -103,12 +124,14 @@ public final class RonalyticClient: Sendable {
             dropPolicy: config.dropPolicy,
             sessionTimeout: config.sessionTimeout,
             optOutStore: config.optOutStore,
-            logger: config.logger
+            logger: config.logger,
+            lifecycleObserver: config.lifecycleObserver
         )
     }
 
     deinit {
         timerTask?.cancel()
+        lifecycleTask?.cancel()
         continuation.finish()
     }
 
@@ -161,6 +184,12 @@ public final class RonalyticClient: Sendable {
         await withCheckedContinuation { barrier in
             continuation.yield(.barrier(barrier))
         }
+    }
+    
+    /// Suspends until the lifecycle stream has ended and every event was handled.
+    /// Only returns when the observer's stream finishes. Used by tests.
+    func waitUntilLifecycleHandled() async {
+        await lifecycleTask?.value
     }
 
     private func makeDraft(

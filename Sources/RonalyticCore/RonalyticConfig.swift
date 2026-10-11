@@ -42,6 +42,9 @@ public struct RonalyticConfig: Sendable {
     /// Receives the SDK's own diagnostics. Silent by default.
     /// Use ConsoleLogger(level: .verbose) while developing.
     public var logger: any SDKLogger
+    /// Receives app lifecycle changes: flushes on background, counts foreground as activity.
+    /// nil means no lifecycle handling. The Ronalytic umbrella module will provide a UIKit one.
+    public var lifecycleObserver: (any LifecycleObserver)?
     /// Source of time. Replace in tests.
     public var clock: any SDKClock
     /// Source of event IDs. Replace in tests.
@@ -65,6 +68,7 @@ public struct RonalyticConfig: Sendable {
         redactionRules: [RedactionRule] = [],
         optOutStore: any OptOutStore = UserDefaultsOptOutStore(),
         logger: any SDKLogger = NoOpLogger(),
+        lifecycleObserver: (any LifecycleObserver)? = nil,
         clock: any SDKClock = SystemClock(),
         idGenerator: any IDGenerator = UUIDGenerator()
     ) {
@@ -87,5 +91,6 @@ public struct RonalyticConfig: Sendable {
         self.clock = clock
         self.idGenerator = idGenerator
         self.logger = logger
+        self.lifecycleObserver = lifecycleObserver
     }
 }
