@@ -66,6 +66,30 @@ final class RonalyticClientMetricsTests: XCTestCase {
         XCTAssertEqual(snapshot.eventsStored, 0)
     }
 
+    func test_diagnostics_returnsTheCurrentCounters() async {
+        let client = makeClient()
+
+        client.track("a")
+        await client.waitUntilIdle()
+        let diagnostics = client.diagnostics()
+
+        XCTAssertEqual(diagnostics.eventsStored, 1)
+    }
+
+    func test_diagnostics_isACopyThatDoesNotChangeLater() async {
+        let client = makeClient()
+        client.track("a")
+        await client.waitUntilIdle()
+
+        let before = client.diagnostics()
+        client.track("b")
+        await client.waitUntilIdle()
+        let after = client.diagnostics()
+
+        XCTAssertEqual(before.eventsStored, 1)
+        XCTAssertEqual(after.eventsStored, 2)
+    }
+
     // MARK: - Helper
 
     private func makeClient(

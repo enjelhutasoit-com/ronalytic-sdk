@@ -105,6 +105,23 @@ final class RonalyticSDKTests: XCTestCase {
         XCTAssertEqual(count, 0)
     }
 
+    func test_diagnosticsBeforeConfigure_isNil() {
+        let diagnostics = RonalyticSDK.diagnostics()
+
+        XCTAssertNil(diagnostics)
+    }
+
+    func test_diagnosticsAfterConfigure_reflectsTrackedEvents() async {
+        RonalyticSDK.configure(makeConfig(storage: InMemoryQueueStorage()))
+
+        RonalyticSDK.track("a")
+        RonalyticSDK.track("b")
+        await RonalyticSDK.client?.waitUntilIdle()
+        let diagnostics = RonalyticSDK.diagnostics()
+
+        XCTAssertEqual(diagnostics?.eventsStored, 2)
+    }
+
     // MARK: - Helper
 
     private func makeConfig(

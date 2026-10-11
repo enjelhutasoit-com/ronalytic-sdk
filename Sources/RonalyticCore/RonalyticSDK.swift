@@ -39,6 +39,11 @@ public enum RonalyticSDK {
         holder.current?.optIn()
     }
 
+    /// The SDK's own counters, or nil when `configure` was not called yet.
+    public static func diagnostics() -> MetricsSnapshot? {
+        holder.current?.diagnostics()
+    }
+
     // MARK: - Internal, for tests
 
     static var client: RonalyticClient? { holder.current }
