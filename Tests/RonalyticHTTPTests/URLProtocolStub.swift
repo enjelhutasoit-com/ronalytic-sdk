@@ -7,7 +7,7 @@ import Foundation
 /// Intercepts requests of a URLSession so tests never touch the network.
 final class URLProtocolStub: URLProtocol, @unchecked Sendable {
     enum Reply {
-        case status(Int)
+        case status(Int, body: Data = Data())
         case failure(URLError)
     }
 
@@ -51,7 +51,7 @@ final class URLProtocolStub: URLProtocol, @unchecked Sendable {
         switch currentReply {
         case .failure(let error):
             client?.urlProtocol(self, didFailWithError: error)
-        case .status(let code):
+        case .status(let code, let body):
             let url = request.url ?? URL(fileURLWithPath: "/")
             let response = HTTPURLResponse(
                 url: url, statusCode: code, httpVersion: "HTTP/1.1", headerFields: nil
@@ -59,7 +59,7 @@ final class URLProtocolStub: URLProtocol, @unchecked Sendable {
             if let response {
                 client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             }
-            client?.urlProtocol(self, didLoad: Data())
+            client?.urlProtocol(self, didLoad: body)
             client?.urlProtocolDidFinishLoading(self)
         }
     }
