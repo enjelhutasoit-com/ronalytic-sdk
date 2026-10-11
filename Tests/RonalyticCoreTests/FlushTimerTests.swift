@@ -6,7 +6,7 @@ import XCTest
 @testable import RonalyticCore
 
 /// Allows a fixed number of sleeps, then throws so the timer loop ends.
-private final class LimitedClock: SDKClock, @unchecked Sendable {
+private final class LimitedClockStub: SDKClock, @unchecked Sendable {
     struct Exhausted: Error {}
 
     private let lock = NSLock()
@@ -42,7 +42,7 @@ private actor TickCounter {
 
 final class  FlushTimerTests: XCTestCase {
     func test_ticksOncePerInterval() async {
-        let clock = LimitedClock(maxSleeps: 3)
+        let clock = LimitedClockStub(maxSleeps: 3)
         let ticks = TickCounter()
 
         await FlushTimer.run(every: .seconds(30), clock: clock) { await ticks.increment() }
@@ -57,7 +57,7 @@ final class  FlushTimerTests: XCTestCase {
     }
 
     func test_stopsWhenSleepFails_withoutTicking() async {
-        let clock = LimitedClock(maxSleeps: 0)
+        let clock = LimitedClockStub(maxSleeps: 0)
         let ticks = TickCounter()
 
         await FlushTimer.run(every: .seconds(30), clock: clock) { await ticks.increment() }

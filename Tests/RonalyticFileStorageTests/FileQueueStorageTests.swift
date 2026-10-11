@@ -36,7 +36,7 @@ final class FileQueueStorageTests: XCTestCase {
             .count
     }
 
-    // MARK: - Shared contract (the same rules InMemoryQueueStorage follows)
+    // MARK: - Shared contract (the same rules QueueStorageFake follows)
 
     func test_satisfiesStorageContract() async throws {
         let make: () -> any QueueStorage = {

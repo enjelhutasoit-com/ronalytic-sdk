@@ -6,9 +6,9 @@ import XCTest
 import RonalyticCore
 import RonalyticTestSupport
 
-final class InMemoryQueueStorageTests: XCTestCase {
+final class QueueStorageFakeTests: XCTestCase {
 
-    private let make: () -> any QueueStorage = { InMemoryQueueStorage() }
+    private let make: () -> any QueueStorage = { QueueStorageFake() }
 
     func test_emptyStorage() async throws {
         try await QueueStorageContract.emptyStorageHasNothing(make)

@@ -8,7 +8,7 @@ import RonalyticTestSupport
 
 final class RonalyticClientConsentTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
+    private let storage = QueueStorageFake()
 
     func test_optOut_stopsNewEvents() async throws {
         let client = makeClient()
@@ -68,7 +68,7 @@ final class RonalyticClientConsentTests: XCTestCase {
     }
 
     func test_deniedConsentProvider_blocksEvents() async throws {
-        let client = makeClient(consent: FakeConsentProvider(.denied))
+        let client = makeClient(consent: ConsentProviderFake(.denied))
 
         client.track("a")
         await client.waitUntilIdle()
@@ -89,15 +89,15 @@ final class RonalyticClientConsentTests: XCTestCase {
 
     // MARK: - Helper
 
-    private func makeClient(consent: FakeConsentProvider? = nil) -> RonalyticClient {
+    private func makeClient(consent: ConsentProviderFake? = nil) -> RonalyticClient {
         RonalyticClient(config: RonalyticConfig(
             storage: storage,
             flushInterval: nil,
             collectContext: false,
             consentProvider: consent,
             optOutStore: InMemoryOptOutStore(),
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator()
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake()
         ))
     }
 

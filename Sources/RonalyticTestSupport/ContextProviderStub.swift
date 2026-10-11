@@ -18,7 +18,7 @@ public extension EnvironmentContext {
 }
 
 /// Returns the context it was given.
-public struct FakeContextProvider: ContextProvider {
+public struct ContextProviderStub: ContextProvider {
     private let context: EnvironmentContext
 
     public init(_ context: EnvironmentContext = .fixture) {

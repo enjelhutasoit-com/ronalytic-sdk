@@ -5,7 +5,7 @@
 import RonalyticCore
 
 /// Lifecycle observer driven by tests. Supports a single consumer.
-public final class FakeLifecycleObserver: LifecycleObserver, Sendable {
+public final class LifecycleObserverFake: LifecycleObserver, Sendable {
     private let stream: AsyncStream<LifecycleEvent>
     private let continuation: AsyncStream<LifecycleEvent>.Continuation
 

@@ -23,7 +23,7 @@ private struct PropertyReaderPlugin: Plugin {
 
 final class RonalyticClientRedactionTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
+    private let storage = QueueStorageFake()
 
     func test_storedEventsAreRedacted() async throws {
         let client = makeClient()
@@ -74,8 +74,8 @@ final class RonalyticClientRedactionTests: XCTestCase {
             collectContext: false,
             redactionRules: [.maskEmails, .removeKeys(["password"])],
             optOutStore: InMemoryOptOutStore(),
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator()
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake()
         ))
     }
 }

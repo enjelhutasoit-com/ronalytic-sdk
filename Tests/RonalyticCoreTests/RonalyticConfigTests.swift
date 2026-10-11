@@ -14,7 +14,7 @@ private struct NamedPlugin: Plugin {
 
 final class RonalyticConfigTests: XCTestCase {
     func test_defaults() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertEqual(config.batchSize, 50)
         XCTAssertEqual(config.flushInterval, .seconds(30))
@@ -27,7 +27,7 @@ final class RonalyticConfigTests: XCTestCase {
 
     func test_customValuesAreKept() {
         let config = RonalyticConfig(
-            storage: InMemoryQueueStorage(),
+            storage: QueueStorageFake(),
             plugins: [NamedPlugin(name: "one")],
             batchSize: 10,
             flushInterval: .seconds(5),
@@ -46,7 +46,7 @@ final class RonalyticConfigTests: XCTestCase {
 
     func test_flushIntervalCanBeDisabled() {
         let config = RonalyticConfig(
-            storage: InMemoryQueueStorage(),
+            storage: QueueStorageFake(),
             flushInterval: nil
         )
 
@@ -54,49 +54,49 @@ final class RonalyticConfigTests: XCTestCase {
     }
 
     func test_sessionTimeoutDefaultsToThirtyMinutes() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertEqual(config.sessionTimeout, 1_800)
     }
 
     func test_collectContextDefaultsToTrue() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertTrue(config.collectContext)
     }
 
     func test_consentProviderDefaultsToNil() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertNil(config.consentProvider)
     }
 
     func test_unknownConsentIsNotAllowedByDefault() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertFalse(config.allowWhenConsentUnknown)
     }
 
     func test_redactionRulesDefaultToEmpty() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertTrue(config.redactionRules.isEmpty)
     }
 
     func test_loggerDefaultsToNoOp() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertTrue(config.logger is NoOpLogger)
     }
 
     func test_lifecycleObserverDefaultsToNil() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertNil(config.lifecycleObserver)
     }
 
     func test_backgroundTaskRunnerDefaultsToImmediate() {
-        let config = RonalyticConfig(storage: InMemoryQueueStorage())
+        let config = RonalyticConfig(storage: QueueStorageFake())
 
         XCTAssertTrue(config.backgroundTaskRunner is ImmediateBackgroundTaskRunner)
     }

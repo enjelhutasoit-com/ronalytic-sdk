@@ -6,10 +6,10 @@ import XCTest
 import RonalyticCore
 import RonalyticTestSupport
 
-final class FakeLifecycleObserverTests: XCTestCase {
+final class LifecycleObserverFakeTests: XCTestCase {
 
     func test_deliversSentEventsInOrder() async {
-        let observer = FakeLifecycleObserver()
+        let observer = LifecycleObserverFake()
         observer.send(.didEnterBackground)
         observer.send(.willEnterForeground)
         observer.finish()
@@ -23,7 +23,7 @@ final class FakeLifecycleObserverTests: XCTestCase {
     }
 
     func test_canBeUsedThroughTheProtocol() async {
-        let fake = FakeLifecycleObserver()
+        let fake = LifecycleObserverFake()
         let observer: any LifecycleObserver = fake
         fake.send(.willTerminate)
         fake.finish()

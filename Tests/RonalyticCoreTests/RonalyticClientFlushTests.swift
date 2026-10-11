@@ -8,19 +8,19 @@ import RonalyticTestSupport
 
 final class RonalyticClientFlushTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
+    private let storage = QueueStorageFake()
 
-    private func makeClient(transport: FakeTransport?) -> RonalyticClient {
+    private func makeClient(transport: TransportSpy?) -> RonalyticClient {
         RonalyticClient(
             storage: storage,
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator(),
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake(),
             transport: transport
         )
     }
 
     func test_flush_sendsEventsTrackedBeforeIt() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let client = makeClient(transport: transport)
 
         client.track("a")
@@ -33,7 +33,7 @@ final class RonalyticClientFlushTests: XCTestCase {
     }
 
     func test_flush_removesDeliveredEventsFromStorage() async throws {
-        let client = makeClient(transport: FakeTransport())
+        let client = makeClient(transport: TransportSpy())
 
         client.track("a")
         client.flush()
@@ -55,7 +55,7 @@ final class RonalyticClientFlushTests: XCTestCase {
     }
 
     func test_flush_retriesAfterATemporaryFailure() async throws {
-        let transport = FakeTransport(responses: [.throwError])
+        let transport = TransportSpy(responses: [.throwError])
         let client = makeClient(transport: transport)
 
         client.track("a")

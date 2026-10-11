@@ -8,7 +8,7 @@ import RonalyticTestSupport
 
 final class RonalyticExtensionTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
+    private let storage = QueueStorageFake()
 
     func test_trackScreenAndIdentify_areWrittenToStorage() async throws {
         let sut = makeExtension()
@@ -24,7 +24,7 @@ final class RonalyticExtensionTests: XCTestCase {
     }
 
     func test_neverSends_evenWhenAGivenConfigHasATransportAndBatchSizeIsReached() async throws {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let sut = makeExtension(transport: transport)
 
         sut.track("a")
@@ -38,8 +38,8 @@ final class RonalyticExtensionTests: XCTestCase {
     }
 
     func test_ignoresTheLifecycleObserverOfTheConfig() async {
-        let transport = FakeTransport()
-        let observer = FakeLifecycleObserver()
+        let transport = TransportSpy()
+        let observer = LifecycleObserverFake()
         let sut = makeExtension(transport: transport, lifecycleObserver: observer)
         sut.track("a")
 
@@ -64,7 +64,7 @@ final class RonalyticExtensionTests: XCTestCase {
     }
 
     func test_deniedConsent_dropsEvents() async throws {
-        let sut = makeExtension(consent: FakeConsentProvider(.denied))
+        let sut = makeExtension(consent: ConsentProviderFake(.denied))
 
         sut.track("a")
         await sut.waitUntilStored()
@@ -87,10 +87,10 @@ final class RonalyticExtensionTests: XCTestCase {
     // MARK: - Helper
 
     private func makeExtension(
-        transport: FakeTransport? = nil,
-        consent: FakeConsentProvider? = nil,
+        transport: TransportSpy? = nil,
+        consent: ConsentProviderFake? = nil,
         optOutStore: InMemoryOptOutStore = InMemoryOptOutStore(),
-        lifecycleObserver: FakeLifecycleObserver? = nil
+        lifecycleObserver: LifecycleObserverFake? = nil
     ) -> RonalyticExtension {
         RonalyticExtension(
             config: RonalyticConfig(
@@ -102,8 +102,8 @@ final class RonalyticExtensionTests: XCTestCase {
                 consentProvider: consent,
                 optOutStore: optOutStore,
                 lifecycleObserver: lifecycleObserver,
-                clock: FakeClock(),
-                idGenerator: SequentialIDGenerator()
+                clock: ClockFake(),
+                idGenerator: IDGeneratorFake()
             )
         )
     }

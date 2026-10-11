@@ -16,7 +16,7 @@ public struct LogEntry: Sendable, Equatable {
 }
 
 /// Logger that remembers everything it receives. For tests.
-public final class RecordingLogger: SDKLogger, @unchecked Sendable {
+public final class SDKLoggerSpy: SDKLogger, @unchecked Sendable {
     private let lock = NSLock()
     private var recorded: [LogEntry] = []
 

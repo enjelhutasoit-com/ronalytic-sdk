@@ -8,8 +8,8 @@ import RonalyticTestSupport
 
 final class RonalyticClientSessionTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
-    private let clock = FakeClock()
+    private let storage = QueueStorageFake()
+    private let clock = ClockFake()
 
     func test_eventsWithinTimeout_shareSessionID() async throws {
         let client = makeClient()
@@ -42,7 +42,7 @@ final class RonalyticClientSessionTests: XCTestCase {
         RonalyticClient(
             storage: storage,
             clock: clock,
-            idGenerator: SequentialIDGenerator(),
+            idGenerator: IDGeneratorFake(),
             sessionTimeout: 1_800
         )
     }

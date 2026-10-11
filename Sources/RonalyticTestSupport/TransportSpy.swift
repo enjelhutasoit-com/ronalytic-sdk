@@ -6,7 +6,7 @@ import RonalyticCore
 
 /// Scriptable Transport for tests. Plays the given responses in order,
 /// then delivers everything. Records every batch it receives.
-public actor FakeTransport: Transport {
+public actor TransportSpy: Transport {
     public enum Response: Sendable {
         case deliverAll
         case throwError

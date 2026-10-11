@@ -52,11 +52,11 @@ final class PropertyValueLiteralsTests: XCTestCase {
     }
 
     func test_track_acceptsLiteralProperties() async throws {
-        let storage = InMemoryQueueStorage()
+        let storage = QueueStorageFake()
         let client = RonalyticClient(
             storage: storage,
-            clock: FakeClock(),
-            idGenerator: SequentialIDGenerator()
+            clock: ClockFake(),
+            idGenerator: IDGeneratorFake()
         )
 
         client.track(

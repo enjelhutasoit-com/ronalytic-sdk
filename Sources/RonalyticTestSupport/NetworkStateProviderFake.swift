@@ -5,7 +5,7 @@
 import RonalyticCore
 
 /// Network provider whose state tests can change.
-public actor FakeNetworkStateProvider: NetworkStateProvider {
+public actor NetworkStateProviderFake: NetworkStateProvider {
     private var state: NetworkState
 
     public init(_ state: NetworkState = .wifi) {

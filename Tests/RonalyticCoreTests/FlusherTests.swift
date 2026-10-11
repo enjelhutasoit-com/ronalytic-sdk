@@ -8,10 +8,10 @@ import RonalyticTestSupport
 
 final class FlusherTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
+    private let storage = QueueStorageFake()
 
     private func makeFlusher(
-        transport: FakeTransport,
+        transport: TransportSpy,
         batchSize: Int = 50
     ) -> Flusher {
         Flusher(
@@ -31,7 +31,7 @@ final class FlusherTests: XCTestCase {
     }
 
     func test_emptyQueue_sendsNothing() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let flusher = makeFlusher(transport: transport)
 
         await flusher.flush()
@@ -42,7 +42,7 @@ final class FlusherTests: XCTestCase {
 
     func test_deliveredEvents_areRemoved() async throws {
         try await store("a", "b")
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let flusher = makeFlusher(transport: transport)
 
         await flusher.flush()
@@ -53,7 +53,7 @@ final class FlusherTests: XCTestCase {
 
     func test_sendsInBatchesOfTheConfiguredSize() async throws {
         try await store("a", "b", "c", "d", "e")
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let flusher = makeFlusher(transport: transport, batchSize: 2)
 
         await flusher.flush()
@@ -64,7 +64,7 @@ final class FlusherTests: XCTestCase {
 
     func test_wholeBatchFailure_keepsEventsAndStops() async throws {
         try await store("a", "b", "c")
-        let transport = FakeTransport(responses: [.throwError])
+        let transport = TransportSpy(responses: [.throwError])
         let flusher = makeFlusher(transport: transport, batchSize: 2)
 
         await flusher.flush()
@@ -78,7 +78,7 @@ final class FlusherTests: XCTestCase {
     func test_partialFailure_removesDeliveredAndRejected_keepsRetryable() async throws {
         try await store("a", "b", "c")
         let result = DeliveryResult(delivered: ["a"], retryable: ["b"], rejected: ["c"])
-        let transport = FakeTransport(responses: [.result(result)])
+        let transport = TransportSpy(responses: [.result(result)])
         let flusher = makeFlusher(transport: transport)
 
         await flusher.flush()
@@ -90,7 +90,7 @@ final class FlusherTests: XCTestCase {
     func test_retryableEvents_stopTheFlush() async throws {
         try await store("a", "b", "c")
         let result = DeliveryResult(delivered: ["a"], retryable: ["b"])
-        let transport = FakeTransport(responses: [.result(result)])
+        let transport = TransportSpy(responses: [.result(result)])
         let flusher = makeFlusher(transport: transport, batchSize: 2)
 
         await flusher.flush()
@@ -101,7 +101,7 @@ final class FlusherTests: XCTestCase {
 
     func test_eventsMissingFromTheResult_areKept() async throws {
         try await store("a", "b")
-        let transport = FakeTransport(responses: [.result(DeliveryResult(delivered: ["a"]))])
+        let transport = TransportSpy(responses: [.result(DeliveryResult(delivered: ["a"]))])
         let flusher = makeFlusher(transport: transport)
 
         await flusher.flush()

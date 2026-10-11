@@ -9,7 +9,7 @@ import RonalyticTestSupport
 final class ConsentGateTests: XCTestCase {
     func test_granted_letsEventThrough() async {
         let gate = ConsentGate(
-            provider: FakeConsentProvider(.granted),
+            provider: ConsentProviderFake(.granted),
             allowWhenUnknown: false
         )
 
@@ -20,7 +20,7 @@ final class ConsentGateTests: XCTestCase {
 
     func test_denied_dropEvent() async {
         let gate = ConsentGate(
-            provider: FakeConsentProvider(.denied),
+            provider: ConsentProviderFake(.denied),
             allowWhenUnknown: true
         )
 
@@ -31,7 +31,7 @@ final class ConsentGateTests: XCTestCase {
 
     func test_unknown_dropsEventByDefault() async {
         let gate = ConsentGate(
-            provider: FakeConsentProvider(.unknown),
+            provider: ConsentProviderFake(.unknown),
             allowWhenUnknown: false
         )
 
@@ -42,7 +42,7 @@ final class ConsentGateTests: XCTestCase {
 
     func test_unknown_letsEventThroughWhenAllowed() async {
         let gate = ConsentGate(
-            provider: FakeConsentProvider(.unknown),
+            provider: ConsentProviderFake(.unknown),
             allowWhenUnknown: true
         )
 
@@ -52,7 +52,7 @@ final class ConsentGateTests: XCTestCase {
     }
 
     func test_readsStatusForEveryEvent() async {
-        let provider = FakeConsentProvider(.granted)
+        let provider = ConsentProviderFake(.granted)
         let gate = ConsentGate(
             provider: provider,
             allowWhenUnknown: false

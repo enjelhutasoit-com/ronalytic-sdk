@@ -9,10 +9,10 @@ import RonalyticTestSupport
 /// Storage whose `remove` fails a set number of times.
 /// From the flusher's view this equals an app that died right after
 /// the server accepted a batch, but before the events were removed.
-private actor RemoveFailsStorage: QueueStorage {
+private actor RemoveFailsStorageStub: QueueStorage {
     struct Failure: Error {}
 
-    private let base = InMemoryQueueStorage()
+    private let base = QueueStorageFake()
     private var failuresLeft: Int
 
     init(failures: Int) {
@@ -42,7 +42,7 @@ private actor RemoveFailsStorage: QueueStorage {
 
 final class DeliveryGuaranteeTests: XCTestCase {
 
-    private let clock = FakeClock()
+    private let clock = ClockFake()
 
     private func ids(_ batches: [[Event]]) -> [[String]] {
         batches.map { $0.map(\.id) }
@@ -51,8 +51,8 @@ final class DeliveryGuaranteeTests: XCTestCase {
     // MARK: - At-least-once
 
     func test_crashAfterServerAccepted_eventIsResentWithTheSameID() async throws {
-        let storage = RemoveFailsStorage(failures: 1)
-        let transport = FakeTransport()
+        let storage = RemoveFailsStorageStub(failures: 1)
+        let transport = TransportSpy()
         try await storage.append([.fixture(id: "a")])
 
         // The server accepted "a", but the app died before removing it.
@@ -70,8 +70,8 @@ final class DeliveryGuaranteeTests: XCTestCase {
     }
 
     func test_failedRemoval_isRetriedAutomaticallyWithinOneFlush() async throws {
-        let storage = RemoveFailsStorage(failures: 1)
-        let transport = FakeTransport()
+        let storage = RemoveFailsStorageStub(failures: 1)
+        let transport = TransportSpy()
         try await storage.append([.fixture(id: "a")])
         let flusher = Flusher(
             storage: storage,
@@ -92,8 +92,8 @@ final class DeliveryGuaranteeTests: XCTestCase {
     // MARK: - Ordering
 
     func test_orderIsKeptWhenABatchFailsAndIsRetried() async throws {
-        let storage = InMemoryQueueStorage()
-        let transport = FakeTransport(responses: [.throwError])
+        let storage = QueueStorageFake()
+        let transport = TransportSpy(responses: [.throwError])
         try await storage.append([.fixture(id: "a"), .fixture(id: "b"), .fixture(id: "c")])
         let flusher = Flusher(
             storage: storage,
@@ -110,9 +110,9 @@ final class DeliveryGuaranteeTests: XCTestCase {
     }
 
     func test_eventThatFailedStaysInFrontOfNewerEvents() async throws {
-        let storage = InMemoryQueueStorage()
+        let storage = QueueStorageFake()
         let result = DeliveryResult(delivered: ["a", "c"], retryable: ["b"])
-        let transport = FakeTransport(responses: [.result(result)])
+        let transport = TransportSpy(responses: [.result(result)])
         try await storage.append([.fixture(id: "a"), .fixture(id: "b"), .fixture(id: "c")])
 
         await Flusher(storage: storage, transport: transport, batchSize: 50, backoff: .noRetry).flush()
@@ -125,10 +125,10 @@ final class DeliveryGuaranteeTests: XCTestCase {
     // MARK: - Partial failure, end to end
 
     func test_partialFailure_fromTrackToStorage() async throws {
-        let storage = InMemoryQueueStorage()
+        let storage = QueueStorageFake()
         // Session takes id-1, so the three events are id-2, id-3 and id-4.
         let result = DeliveryResult(delivered: ["id-2"], retryable: ["id-3"], rejected: ["id-4"])
-        let transport = FakeTransport(responses: [.result(result)])
+        let transport = TransportSpy(responses: [.result(result)])
         let client = RonalyticClient(config: RonalyticConfig(
             storage: storage,
             transport: transport,
@@ -138,7 +138,7 @@ final class DeliveryGuaranteeTests: XCTestCase {
             collectContext: false,
             optOutStore: InMemoryOptOutStore(),
             clock: clock,
-            idGenerator: SequentialIDGenerator()
+            idGenerator: IDGeneratorFake()
         ))
 
         client.track("delivered")

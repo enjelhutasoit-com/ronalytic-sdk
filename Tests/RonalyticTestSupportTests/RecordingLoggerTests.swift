@@ -8,7 +8,7 @@ import RonalyticTestSupport
 
 final class RecordingLoggerTests: XCTestCase {
     func test_recordsEntriesInOrder() {
-        let logger = RecordingLogger()
+        let logger = SDKLoggerSpy()
 
         logger.log(.error, "first")
         logger.log(.info, "second")

@@ -6,7 +6,7 @@ import Foundation
 import RonalyticCore
 
 /// Counts how often it ran, and can run a check right after the work finished.
-public final class FakeBackgroundTaskRunner: BackgroundTaskRunner, @unchecked Sendable {
+public final class BackgroundTaskRunnerSpy: BackgroundTaskRunner, @unchecked Sendable {
     private let lock = NSLock()
     private var runs = 0
     private let afterWork: (@Sendable () async -> Void)?

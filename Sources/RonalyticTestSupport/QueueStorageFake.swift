@@ -5,7 +5,7 @@
 import RonalyticCore
 
 /// Non-persistent QueueStorage for tests and demos.
-public actor InMemoryQueueStorage: QueueStorage {
+public actor QueueStorageFake: QueueStorage {
     private var events: [Event] = []
 
     public init() {}

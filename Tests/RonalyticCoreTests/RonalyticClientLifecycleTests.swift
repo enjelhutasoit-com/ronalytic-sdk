@@ -13,9 +13,9 @@ private actor BatchCountRecorder {
 
 final class RonalyticClientLifecycleTests: XCTestCase {
 
-    private let storage = InMemoryQueueStorage()
-    private let clock = FakeClock()
-    private let observer = FakeLifecycleObserver()
+    private let storage = QueueStorageFake()
+    private let clock = ClockFake()
+    private let observer = LifecycleObserverFake()
 
     /// Sends one lifecycle event and waits until the client has fully handled it.
     private func deliver(_ event: LifecycleEvent, to client: RonalyticClient) async {
@@ -26,7 +26,7 @@ final class RonalyticClientLifecycleTests: XCTestCase {
     }
 
     func test_enteringBackground_flushesStoredEvents() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let client = makeClient(transport: transport)
         client.track("a")
 
@@ -37,7 +37,7 @@ final class RonalyticClientLifecycleTests: XCTestCase {
     }
 
     func test_willTerminate_flushesStoredEvents() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let client = makeClient(transport: transport)
         client.track("a")
 
@@ -48,7 +48,7 @@ final class RonalyticClientLifecycleTests: XCTestCase {
     }
 
     func test_enteringForeground_doesNotFlush() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let client = makeClient(transport: transport)
         client.track("a")
 
@@ -86,9 +86,9 @@ final class RonalyticClientLifecycleTests: XCTestCase {
     }
 
     func test_backgroundFlush_finishesInsideTheBackgroundTask() async {
-        let transport = FakeTransport()
+        let transport = TransportSpy()
         let seen = BatchCountRecorder()
-        let runner = FakeBackgroundTaskRunner(afterWork: {
+        let runner = BackgroundTaskRunnerSpy(afterWork: {
             await seen.record(await transport.sentBatches.count)
         })
         let client = makeClient(transport: transport, runner: runner)
@@ -102,8 +102,8 @@ final class RonalyticClientLifecycleTests: XCTestCase {
     }
 
     func test_willTerminate_alsoUsesTheBackgroundTask() async {
-        let runner = FakeBackgroundTaskRunner()
-        let client = makeClient(transport: FakeTransport(), runner: runner)
+        let runner = BackgroundTaskRunnerSpy()
+        let client = makeClient(transport: TransportSpy(), runner: runner)
 
         await deliver(.willTerminate, to: client)
 
@@ -111,8 +111,8 @@ final class RonalyticClientLifecycleTests: XCTestCase {
     }
 
     func test_foreground_doesNotUseTheBackgroundTask() async {
-        let runner = FakeBackgroundTaskRunner()
-        let client = makeClient(transport: FakeTransport(), runner: runner)
+        let runner = BackgroundTaskRunnerSpy()
+        let client = makeClient(transport: TransportSpy(), runner: runner)
 
         await deliver(.willEnterForeground, to: client)
 
@@ -122,13 +122,13 @@ final class RonalyticClientLifecycleTests: XCTestCase {
     // MARK: - Helper
 
     private func makeClient(
-        transport: FakeTransport? = nil,
+        transport: TransportSpy? = nil,
         runner: any BackgroundTaskRunner = ImmediateBackgroundTaskRunner()
     ) -> RonalyticClient {
         RonalyticClient(
             storage: storage,
             clock: clock,
-            idGenerator: SequentialIDGenerator(),
+            idGenerator: IDGeneratorFake(),
             transport: transport,
             sessionTimeout: 1_800,
             lifecycleObserver: observer,

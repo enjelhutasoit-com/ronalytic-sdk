@@ -7,7 +7,7 @@ import RonalyticCore
 
 /// Controllable clock for tests. `sleep` returns immediately,
 /// records the duration and moves the fake time forward.
-public final class FakeClock: SDKClock, @unchecked Sendable {
+public final class ClockFake: SDKClock, @unchecked Sendable {
     private let lock = NSLock()
     private var current: Date
     private var recordedSleeps: [Duration] = []

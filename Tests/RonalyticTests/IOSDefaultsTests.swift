@@ -13,7 +13,7 @@ private struct NamedPlugin: Plugin {
     func process(_ event: Event) async -> Event? { event }
 }
 
-private struct NoOpBackgroundTaskAPI: BackgroundTaskAPI {
+private struct BackgroundTaskAPIStub: BackgroundTaskAPI {
     func beginTask(name: String, onExpiration: @escaping @Sendable () -> Void) async -> Int? { nil }
     func endTask(_ id: Int) {}
 }
@@ -23,13 +23,13 @@ final class IOSDefaultsTests: XCTestCase {
     private let center = NotificationCenter()
 
     func test_installsALifecycleObserver() {
-        let config = makeConfig(network: FakeNetworkStateProvider(.wifi))
+        let config = makeConfig(network: NetworkStateProviderFake(.wifi))
 
         XCTAssertTrue(config.lifecycleObserver is NotificationLifecycleObserver)
     }
 
     func test_installedObserver_listensToTheGivenNotifications() async {
-        let config = makeConfig(network: FakeNetworkStateProvider(.wifi))
+        let config = makeConfig(network: NetworkStateProviderFake(.wifi))
         let stream = config.lifecycleObserver?.events()
         var iterator = stream?.makeAsyncIterator()
 
@@ -40,13 +40,13 @@ final class IOSDefaultsTests: XCTestCase {
     }
 
     func test_installsTheSystemBackgroundTaskRunner() {
-        let config = makeConfig(network: FakeNetworkStateProvider(.wifi))
+        let config = makeConfig(network: NetworkStateProviderFake(.wifi))
 
         XCTAssertTrue(config.backgroundTaskRunner is SystemBackgroundTaskRunner)
     }
 
     func test_installsTheGivenNetworkProvider() async {
-        let config = makeConfig(network: FakeNetworkStateProvider(.cellular))
+        let config = makeConfig(network: NetworkStateProviderFake(.cellular))
 
         let state = await config.networkStateProvider.current()
 
@@ -54,7 +54,7 @@ final class IOSDefaultsTests: XCTestCase {
     }
 
     func test_keepsEverythingTheCallerSet() {
-        let config = makeConfig(network: FakeNetworkStateProvider(.wifi))
+        let config = makeConfig(network: NetworkStateProviderFake(.wifi))
 
         XCTAssertEqual(config.batchSize, 7)
         XCTAssertEqual(config.plugins.map(\.name), ["mine"])
@@ -69,17 +69,17 @@ final class IOSDefaultsTests: XCTestCase {
         terminate: Notification.Name("test.terminate")
     )
 
-    private func makeConfig(network: FakeNetworkStateProvider) -> RonalyticConfig {
+    private func makeConfig(network: NetworkStateProviderFake) -> RonalyticConfig {
         RonalyticConfig(
-            storage: InMemoryQueueStorage(),
-            transport: FakeTransport(),
+            storage: QueueStorageFake(),
+            transport: TransportSpy(),
             plugins: [NamedPlugin(name: "mine")],
             batchSize: 7
         )
         .applyingSystemIntegrations(
             lifecycleNames: names,
             center: center,
-            backgroundTaskAPI: NoOpBackgroundTaskAPI(),
+            backgroundTaskAPI: BackgroundTaskAPIStub(),
             networkStateProvider: network
         )
     }

@@ -11,7 +11,7 @@ private struct DropAllPlugin: Plugin {
     func process(_ event: Event) async -> Event? { nil }
 }
 
-private struct FailingStorage: QueueStorage {
+private struct FailingStorageStub: QueueStorage {
     struct Failure: Error {}
     func append(_ events: [Event]) async throws { throw Failure() }
     func peek(limit: Int) async throws -> [Event] { [] }
@@ -21,7 +21,7 @@ private struct FailingStorage: QueueStorage {
 
 final class RonalyticClientLoggingTests: XCTestCase {
 
-    private let logger = RecordingLogger()
+    private let logger = SDKLoggerSpy()
 
     func test_storedEvent_isLoggedAsVerbose() async {
         let client = makeClient()
@@ -42,7 +42,7 @@ final class RonalyticClientLoggingTests: XCTestCase {
     }
 
     func test_storageFailure_isLoggedAsError() async {
-        let client = makeClient(storage: FailingStorage())
+        let client = makeClient(storage: FailingStorageStub())
 
         client.track("a")
         await client.waitUntilIdle()
@@ -53,7 +53,7 @@ final class RonalyticClientLoggingTests: XCTestCase {
 
     // MARK: - Helper
     private func makeClient(
-        storage: any QueueStorage = InMemoryQueueStorage(),
+        storage: any QueueStorage = QueueStorageFake(),
         plugins: [any Plugin] = []
     ) -> RonalyticClient {
         RonalyticClient(
@@ -64,8 +64,8 @@ final class RonalyticClientLoggingTests: XCTestCase {
                 collectContext: false,
                 optOutStore: InMemoryOptOutStore(),
                 logger: logger,
-                clock: FakeClock(),
-                idGenerator: SequentialIDGenerator()
+                clock: ClockFake(),
+                idGenerator: IDGeneratorFake()
             )
         )
     }
