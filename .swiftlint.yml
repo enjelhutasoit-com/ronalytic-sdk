@@ -3,3 +3,6 @@ excluded:
 line_length: 120
 identifier_name:
   excluded: [id]
+
+disabled_rules:
+  - static_over_final_class
