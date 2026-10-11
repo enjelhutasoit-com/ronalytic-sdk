@@ -52,3 +52,11 @@ jobs:
 
       - name: Check public API baseline
         run: Scripts/api-dump.sh --check
+
+      - name: Build documentation
+        run: |
+          xcodebuild docbuild \
+            -scheme Ronalytic-Package \
+            -destination 'generic/platform=iOS' \
+            -clonedSourcePackagesDirPath .spm \
+            OTHER_DOCC_FLAGS="--warnings-as-errors"
