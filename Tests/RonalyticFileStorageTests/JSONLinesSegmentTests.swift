@@ -87,15 +87,60 @@ final class JSONLinesSegmentTests: XCTestCase {
         XCTAssertEqual(events, [event])
     }
 
-    func test_readAll_corruptLine_throwsWithLineNumber() throws {
+    func test_read_skipsCorruptLineAndKeepsGoodOnes() throws {
         try segment.append([.fixture(id: "a")])
+        try appendRaw("{not json\n")
+        try segment.append([.fixture(id: "b")])
+
+        let result = try segment.read()
+
+        XCTAssertEqual(result.events.map(\.id), ["a", "b"])
+        XCTAssertEqual(result.skippedLines, 1)
+    }
+
+    func test_read_truncatedLastLine_isSkipped() throws {
+        try segment.append([.fixture(id: "a")])
+        try appendRaw(#"{"id":"b","na"#)
+
+        let result = try segment.read()
+
+        XCTAssertEqual(result.events.map(\.id), ["a"])
+        XCTAssertEqual(result.skippedLines, 1)
+    }
+
+    func test_appendAfterTruncatedLine_doesNotGlueEventsTogether() throws {
+        try segment.append([.fixture(id: "a")])
+        try appendRaw(#"{"id":"b","na"#)
+        try segment.append([.fixture(id: "c")])
+
+        let result = try segment.read()
+
+        XCTAssertEqual(result.events.map(\.id), ["a", "c"])
+        XCTAssertEqual(result.skippedLines, 1)
+    }
+
+    func test_replace_keepsOnlyTheGivenEvents() throws {
+        try segment.append([.fixture(id: "a"), .fixture(id: "b"), .fixture(id: "c")])
+
+        try segment.replace(with: [.fixture(id: "b")])
+
+        XCTAssertEqual(try segment.readAll().map(\.id), ["b"])
+    }
+
+    func test_replace_withNoEvents_deletesTheFile() throws {
+        try segment.append([.fixture(id: "a")])
+
+        try segment.replace(with: [])
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    // MARK: - Helper
+
+    private func appendRaw(_ text: String) throws {
         let handle = try FileHandle(forWritingTo: url)
         try handle.seekToEnd()
-        try handle.write(contentsOf: Data("{not json\n".utf8))
+        try handle.write(contentsOf: Data(text.utf8))
         try handle.close()
-
-        XCTAssertThrowsError(try segment.readAll()) { error in
-            XCTAssertEqual(error as? JSONLinesSegment.SegmentError, .corruptLine(2))
-        }
     }
 }

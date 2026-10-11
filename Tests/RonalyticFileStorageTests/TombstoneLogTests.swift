@@ -40,4 +40,37 @@ final class TombstoneLogTests: XCTestCase {
 
         XCTAssertEqual(ids, ["line1\nline2"])
     }
+
+    func test_corruptLine_isSkipped() throws {
+        try log.append(["a"])
+        let handle = try FileHandle(forWritingTo: directory.appendingPathComponent("tombstones.jsonl"))
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data("\"unfinished".utf8))
+        try handle.close()
+        try log.append(["b"])
+
+        let ids = try log.readAll()
+
+        XCTAssertEqual(ids, ["a", "b"])
+    }
+
+    func test_replace_keepsOnlyTheGivenIDs() throws {
+        try log.append(["a", "b", "c"])
+
+        try log.replace(with: ["b"])
+
+        XCTAssertEqual(try log.readAll(), ["b"])
+    }
+
+    func test_replace_withNoIDs_deletesTheFile() throws {
+        try log.append(["a"])
+
+        try log.replace(with: [])
+
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: directory.appendingPathComponent("tombstones.jsonl").path
+            )
+        )
+    }
 }
