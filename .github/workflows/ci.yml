@@ -25,7 +25,7 @@ jobs:
   test:
     runs-on: macos-15
     env:
-      COVERAGE_MIN: "0"   # raise once we agree on a threshold
+      COVERAGE_MIN: "80"
     steps:
       - uses: actions/checkout@v4
 
@@ -46,8 +46,12 @@ jobs:
 
       - name: Enforce coverage threshold
         run: |
-          COV=$(xcrun xccov view --report --json TestResults.xcresult | jq '.lineCoverage * 100')
-          echo "Line coverage: ${COV}% (minimum ${COVERAGE_MIN}%)"
+           COV=$(xcrun xccov view --report --json TestResults.xcresult | jq '
+            [.targets[]
+              | select(.name | endswith(".xctest") | not)
+              | select(.name | contains("TestSupport") | not)]
+            | (map(.coveredLines) | add) / (map(.executableLines) | add) * 100')
+          echo "SDK line coverage: ${COV}% (minimum ${COVERAGE_MIN}%)"
           awk -v c="$COV" -v m="$COVERAGE_MIN" 'BEGIN { exit (c+0 < m+0) }'
 
       - name: Check public API baseline

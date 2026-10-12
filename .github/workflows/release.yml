@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag
+        id: check
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag '$TAG' must look like v1.2.3" >&2
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+
+          if ! grep -q "static let version = \"$VERSION\"" Sources/RonalyticCore/RonalyticInfo.swift; then
+            echo "RonalyticInfo.version does not match tag $TAG" >&2
+            exit 1
+          fi
+
+          Scripts/release-notes.sh "$VERSION" > /dev/null
+
+          if ! git branch -r --contains "$GITHUB_SHA" | grep -q "origin/main"; then
+            echo "Tag $TAG is not on main" >&2
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: validate
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test on iOS simulator
+        run: |
+          xcodebuild test \
+            -scheme Ronalytic-Package \
+            -destination 'platform=iOS Simulator,name=iPhone 16'
+
+  release:
+    needs: [validate, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Scripts/release-notes.sh "${{ needs.validate.outputs.version }}" > notes.md
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notes.md
