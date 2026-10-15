@@ -44,6 +44,17 @@ public enum RonalyticSDK {
         holder.current?.diagnostics()
     }
 
+    /// Whether the user opted out, or nil when `configure` was not called yet.
+    public static func isOptedOut() -> Bool? {
+        holder.current?.isOptedOut
+    }
+
+    /// Suspends until everything tracked so far has been processed and stored.
+    /// Returns immediately when `configure` was not called yet.
+    public static func waitUntilIdle() async {
+        await holder.current?.waitUntilIdle()
+    }
+
     // MARK: - Internal, for tests
 
     static var client: RonalyticClient? { holder.current }
