@@ -148,6 +148,7 @@ RonalyticClient.optIn() :: swift.method :: func optIn()
 RonalyticClient.optOut() :: swift.method :: func optOut()
 RonalyticClient.screen(_:properties:) :: swift.method :: func screen(_ name: String, properties: [String : PropertyValue] = [:])
 RonalyticClient.track(_:properties:) :: swift.method :: func track(_ name: String, properties: [String : PropertyValue] = [:])
+RonalyticClient.waitUntilIdle() :: swift.method :: func waitUntilIdle() async
 RonalyticConfig :: swift.struct :: struct RonalyticConfig
 RonalyticConfig.allowWhenConsentUnknown :: swift.property :: var allowWhenConsentUnknown: Bool
 RonalyticConfig.backgroundTaskRunner :: swift.property :: var backgroundTaskRunner: any BackgroundTaskRunner
@@ -184,10 +185,12 @@ RonalyticSDK.configure(_:) :: swift.type.method :: static func configure(_ confi
 RonalyticSDK.diagnostics() :: swift.type.method :: static func diagnostics() -> MetricsSnapshot?
 RonalyticSDK.flush() :: swift.type.method :: static func flush()
 RonalyticSDK.identify(_:traits:) :: swift.type.method :: static func identify(_ userID: String, traits: [String : PropertyValue] = [:])
+RonalyticSDK.isOptedOut() :: swift.type.method :: static func isOptedOut() -> Bool?
 RonalyticSDK.optIn() :: swift.type.method :: static func optIn()
 RonalyticSDK.optOut() :: swift.type.method :: static func optOut()
 RonalyticSDK.screen(_:properties:) :: swift.type.method :: static func screen(_ name: String, properties: [String : PropertyValue] = [:])
 RonalyticSDK.track(_:properties:) :: swift.type.method :: static func track(_ name: String, properties: [String : PropertyValue] = [:])
+RonalyticSDK.waitUntilIdle() :: swift.type.method :: static func waitUntilIdle() async
 SDKClock :: swift.protocol :: protocol SDKClock : Sendable
 SDKClock.now() :: swift.method :: func now() -> Date
 SDKClock.sleep(for:) :: swift.method :: func sleep(for duration: Duration) async throws

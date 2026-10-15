@@ -24,5 +24,6 @@ All notable changes are listed here. The format follows
 - HTTP transport with status mapping and per-event response reports
 - Read-only diagnostics: drops, retries, failures and flush time
 - `RonalyticConfig.iOSDefaults` for one-line setup in the main app
+- `RonalyticSDK.isOptedOut()` and public `waitUntilIdle()` on the client and `RonalyticSDK`
 - Test support module with fakes, stubs and spies
 - DocC documentation and a public API baseline checked in CI
