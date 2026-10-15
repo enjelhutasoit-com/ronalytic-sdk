@@ -234,8 +234,9 @@ public final class RonalyticClient: Sendable {
         optOutStore.isOptedOut()
     }
 
-    /// Suspends until everything tracked so far has been processed.
-    func waitUntilIdle() async {
+    /// Suspends until everything tracked so far has been processed and stored.
+    /// Useful before reading `diagnostics()`, or before a short-lived process ends.
+    public func waitUntilIdle() async {
         await withCheckedContinuation { barrier in
             continuation.yield(.barrier(barrier))
         }

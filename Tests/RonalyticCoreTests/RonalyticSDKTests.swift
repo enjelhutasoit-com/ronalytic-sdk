@@ -122,6 +122,57 @@ final class RonalyticSDKTests: XCTestCase {
         XCTAssertEqual(diagnostics?.eventsStored, 2)
     }
 
+    func test_isOptedOutBeforeConfigure_isNil() {
+        let value = RonalyticSDK.isOptedOut()
+
+        XCTAssertNil(value)
+    }
+
+    func test_isOptedOutAfterConfigure_isFalse() {
+        RonalyticSDK.configure(makeConfig(storage: QueueStorageFake()))
+
+        let value = RonalyticSDK.isOptedOut()
+
+        XCTAssertEqual(value, false)
+    }
+
+    func test_isOptedOut_followsOptOutAndOptIn() {
+        RonalyticSDK.configure(makeConfig(storage: QueueStorageFake()))
+
+        RonalyticSDK.optOut()
+        let afterOptOut = RonalyticSDK.isOptedOut()
+        RonalyticSDK.optIn()
+        let afterOptIn = RonalyticSDK.isOptedOut()
+
+        XCTAssertEqual(afterOptOut, true)
+        XCTAssertEqual(afterOptIn, false)
+    }
+
+    func test_waitUntilIdleBeforeConfigure_returnsImmediately() async {
+        await RonalyticSDK.waitUntilIdle()   // reaching this line is the assertion
+    }
+
+    func test_waitUntilIdle_returnsAfterEventsAreStored() async throws {
+        let storage = QueueStorageFake()
+        RonalyticSDK.configure(makeConfig(storage: storage))
+
+        RonalyticSDK.track("a")
+        RonalyticSDK.track("b")
+        await RonalyticSDK.waitUntilIdle()
+
+        let count = try await storage.count()
+        XCTAssertEqual(count, 2)
+    }
+
+    func test_clientWaitUntilIdle_isCallableAsPublicAPI() async {
+        let client = RonalyticClient(config: makeConfig(storage: QueueStorageFake()))
+
+        client.track("a")
+        await client.waitUntilIdle()
+
+        XCTAssertEqual(client.diagnostics().eventsStored, 1)
+    }
+
     // MARK: - Helper
 
     private func makeConfig(
@@ -132,6 +183,7 @@ final class RonalyticSDKTests: XCTestCase {
             storage: storage,
             transport: transport,
             flushInterval: nil,
+            optOutStore: InMemoryOptOutStore(),
             clock: ClockFake(),
             idGenerator: IDGeneratorFake()
         )
