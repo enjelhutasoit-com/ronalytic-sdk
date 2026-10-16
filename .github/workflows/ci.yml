@@ -38,7 +38,7 @@ jobs:
       - name: Build and test on iOS simulator
         run: |
           xcodebuild test \
-            -scheme Ronalytic-Package\
+            -scheme Ronalytic-Package \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
@@ -46,7 +46,7 @@ jobs:
 
       - name: Enforce coverage threshold
         run: |
-           COV=$(xcrun xccov view --report --json TestResults.xcresult | jq '
+          COV=$(xcrun xccov view --report --json TestResults.xcresult | jq '
             [.targets[]
               | select(.name | endswith(".xctest") | not)
               | select(.name | contains("TestSupport") | not)]
