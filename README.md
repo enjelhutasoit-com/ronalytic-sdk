@@ -1,10 +1,15 @@
 # Ronalytic
 
 [![CI](https://github.com/enjelhutasoit-com/ronalytic-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/enjelhutasoit-com/ronalytic-sdk/actions/workflows/ci.yml)
+[![Release](https://github.com/enjelhutasoit-com/ronalytic-sdk/actions/workflows/release.yml/badge.svg)](https://github.com/enjelhutasoit-com/ronalytic-sdk/actions/workflows/release.yml)
 [![Docs](https://github.com/enjelhutasoit-com/ronalytic-sdk/actions/workflows/docs.yml/badge.svg)](https://enjelhutasoit-com.github.io/ronalytic-sdk/documentation/ronalyticcore/)
 ![Swift 6](https://img.shields.io/badge/Swift-6-orange)
 ![iOS 16+](https://img.shields.io/badge/iOS-16%2B-blue)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
+
+<p align="center">
+  <img src="assets/logo.png" alt="Ronalytic logo" height="150">
+</p>
 
 A small, modular analytics SDK for iOS. Track once, send to any destination,
 and swap vendors by changing one line. Zero third-party dependencies.
