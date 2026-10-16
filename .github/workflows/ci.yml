@@ -25,7 +25,7 @@ jobs:
   test:
     runs-on: macos-15
     env:
-      COVERAGE_MIN: "80"
+      COVERAGE_MIN: "90"
     steps:
       - uses: actions/checkout@v4
 
