@@ -111,7 +111,7 @@ final class HTTPTransportTests: XCTestCase {
     }
 
     func test_temporaryFailureStatuses_areRetryable() async throws {
-        for status in [408, 429, 500, 502, 503] {
+        for status in [401, 403, 408, 413, 429, 500, 502, 503] {
             URLProtocolStub.reset(reply: .status(status))
 
             let result = try await makeTransport().send([.fixture(id: "a"), .fixture(id: "b")])
@@ -199,6 +199,48 @@ final class HTTPTransportTests: XCTestCase {
         let result = try await send(["a"], status: 503, body: #"{"delivered":["a"]}"#)
 
         XCTAssertEqual(result, DeliveryResult(delivered: [], retryable: ["a"]))
+    }
+
+    func test_malformedAcknowledgements_areRetryable() async throws {
+        let bodies = [
+            #"{"delivered":"a"}"#,
+            #"{"delivered":["a"],"retryable":false}"#,
+            #"{"delivered":null,"retryable":null}"#,
+            #" {"delivered":["a"]"#,
+            " ["
+        ]
+
+        for body in bodies {
+            let result = try await send(["a", "b"], body: body)
+
+            XCTAssertEqual(result, DeliveryResult(delivered: [], retryable: ["a", "b"]), body)
+        }
+    }
+
+    func test_malformedAcknowledgement_keepsEventsQueuedUntilValidAcknowledgement() async throws {
+        let storage = QueueStorageFake()
+        try await storage.append([.fixture(id: "a"), .fixture(id: "b")])
+        let client = RonalyticClient(config: RonalyticConfig(
+            storage: storage,
+            transport: makeTransport(),
+            flushInterval: nil,
+            backoff: .noRetry,
+            collectContext: false,
+            optOutStore: InMemoryOptOutStore()
+        ))
+        URLProtocolStub.reset(reply: .status(200, body: Data(#"{"delivered":"a"}"#.utf8)))
+
+        client.flush()
+        await client.waitUntilIdle()
+        let retained = try await storage.peek(limit: 10)
+
+        URLProtocolStub.reset(reply: .status(200, body: Data(#"{"delivered":["a","b"]}"#.utf8)))
+        client.flush()
+        await client.waitUntilIdle()
+        let remaining = try await storage.peek(limit: 10)
+
+        XCTAssertEqual(retained.map(\.id), ["a", "b"])
+        XCTAssertTrue(remaining.isEmpty)
     }
 
     // MARK: - Helper

@@ -82,6 +82,11 @@ guarantees article in the documentation.
 
 **Per-event results, not per-batch.** `Transport` returns delivered, retryable
 and rejected groups. Events the server does not mention are retried.
+Malformed structured HTTP acknowledgements and HTTP 401, 403 and 413 keep
+batches queued. Empty and non-report success bodies still acknowledge the full
+batch for compatibility; use explicit per-event reports for stronger guarantees.
+Authentication failures require host-side recovery; oversized batches require a
+smaller configured batch size or server-side support.
 *Why:* one bad event must not cause 49 good ones to be resent or lost.
 *Cost:* the backend should answer per event to benefit. Without a body, a 2xx
 means everything was delivered.

@@ -8,12 +8,13 @@ import RonalyticCore
 /// Sends batches of events to one URL as JSON over HTTP POST.
 ///
 /// Body: `{"batch":[...]}`. Timestamps are Unix milliseconds.
-/// Status mapping: 2xx delivered, 408/429/5xx retryable, other 4xx rejected.
+/// Status mapping: 2xx acknowledgement, 401/403/408/413/429/5xx retryable, other 4xx rejected.
 /// A network error is thrown, which means the whole batch failed.
 ///
 /// Response contract (optional). On a 2xx status the server may answer with
 /// `{"delivered": [ids], "retryable": [ids], "rejected": [ids]}` to report each event.
-/// Events that are not listed are retried. Without such a body, 2xx means all delivered.
+/// Events that are not listed are retried. Malformed reports are retryable.
+/// For compatibility, empty and non-report success bodies still acknowledge the entire batch.
 public struct HTTPTransport: Transport {
     public let endpoint: URL
 
@@ -58,7 +59,7 @@ public struct HTTPTransport: Transport {
     static func outcome(forStatus status: Int) -> Outcome {
         switch status {
         case 200..<300: return .delivered
-        case 408, 429: return .retryable
+        case 401, 403, 408, 413, 429: return .retryable
         case 400..<500: return .rejected
         default: return .retryable
         }
@@ -73,6 +74,9 @@ public struct HTTPTransport: Transport {
             return DeliveryResult(delivered: [], rejected: ids)
         case .delivered:
             guard let report = ResponseReport(body: body) else {
+                if ResponseReport.isMalformed(body) {
+                    return DeliveryResult(delivered: [], retryable: ids)
+                }
                 return DeliveryResult(delivered: ids)
             }
             return report.result(for: ids)
@@ -113,6 +117,22 @@ private struct ResponseReport: Decodable {
               decoded.delivered != nil || decoded.retryable != nil || decoded.rejected != nil
         else { return nil }
         self = decoded
+    }
+
+    /// Called only after report decoding fails. Distinguishes invalid reports
+    /// from legacy non-report success responses.
+    static func isMalformed(_ body: Data) -> Bool {
+        guard !body.isEmpty else { return false }
+
+        if let json = try? JSONSerialization.jsonObject(with: body) {
+            guard let object = json as? [String: Any] else { return false }
+            let reportKeys: Set<String> = ["delivered", "retryable", "rejected"]
+            return !reportKeys.isDisjoint(with: object.keys)
+        }
+
+        let text = String(decoding: body, as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.hasPrefix("{") || text.hasPrefix("[")
     }
 
     /// The most cautious group wins: retryable, then rejected, then delivered.

@@ -6,6 +6,11 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Retain HTTP batches when structured acknowledgements are malformed or the
+  server responds with 401, 403 or 413, instead of permanently removing events.
+
 ## [1.0.0] - 2026-10-16
 
 ### Added
