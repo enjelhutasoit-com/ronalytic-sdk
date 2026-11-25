@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_call:
   pull_request:
   push:
     branches: [main]
@@ -15,10 +16,30 @@ concurrency:
 jobs:
   lint:
     runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+      SWIFTLINT_VERSION: "0.65.1"
+      SWIFTLINT_SHA256: "c1e429b0599cf1b516f369a2d9ec04eaf0e436f3c12b637df8851fa52ff694d0"
     steps:
       - uses: actions/checkout@v4
-      - name: Install SwiftLint
-        run: brew install swiftlint
+      - name: Install pinned SwiftLint
+        run: |
+          set -euo pipefail
+          ARCHIVE="$RUNNER_TEMP/portable_swiftlint.zip"
+          INSTALL_DIR="$RUNNER_TEMP/swiftlint"
+          curl --fail --location --silent --show-error --retry 3 \
+            "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip" \
+            --output "$ARCHIVE"
+          echo "$SWIFTLINT_SHA256  $ARCHIVE" | shasum -a 256 -c -
+          mkdir -p "$INSTALL_DIR"
+          unzip -q "$ARCHIVE" -d "$INSTALL_DIR"
+          INSTALLED_VERSION=$("$INSTALL_DIR/swiftlint" version)
+          if [[ "$INSTALLED_VERSION" != "$SWIFTLINT_VERSION" ]]; then
+            echo "Unexpected SwiftLint version: $INSTALLED_VERSION" >&2
+            exit 1
+          fi
+          echo "SwiftLint $INSTALLED_VERSION"
+          echo "$INSTALL_DIR" >> "$GITHUB_PATH"
       - name: Lint
         run: swiftlint --strict
 
@@ -71,7 +92,8 @@ jobs:
       - name: Enforce coverage threshold
         run: |
           set -euo pipefail
-          COV=$(xcrun xccov view --report --json TestResults.xcresult | jq -er '
+          xcrun xccov view --report --json TestResults.xcresult > "$RUNNER_TEMP/coverage.json"
+          COV=$(jq -er '
             [.targets[]
               | select(.name | endswith(".xctest") | not)
               | select(.name | contains("TestSupport") | not)]
@@ -83,7 +105,7 @@ jobs:
                 error("Invalid covered line count")
               else
                 $covered / $total * 100
-              end')
+              end' "$RUNNER_TEMP/coverage.json")
           echo "SDK line coverage: ${COV}% (minimum ${COVERAGE_MIN}%)"
           awk -v c="$COV" -v m="$COVERAGE_MIN" 'BEGIN { exit (c+0 < m+0) }'
 
@@ -97,3 +119,24 @@ jobs:
             -destination 'generic/platform=iOS' \
             -clonedSourcePackagesDirPath .spm \
             OTHER_DOCC_FLAGS="--warnings-as-errors"
+
+      - name: Archive test result bundle
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          if [[ -d TestResults.xcresult ]]; then
+            ditto -c -k --keepParent TestResults.xcresult "$RUNNER_TEMP/TestResults.xcresult.zip"
+          else
+            echo "No test result bundle was produced"
+          fi
+
+      - name: Upload test diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-diagnostics
+          path: |
+            ${{ runner.temp }}/TestResults.xcresult.zip
+            ${{ runner.temp }}/coverage.json
+          if-no-files-found: warn
+          retention-days: 14

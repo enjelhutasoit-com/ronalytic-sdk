@@ -27,33 +27,26 @@ jobs:
           fi
           VERSION="${TAG#v}"
 
-          if ! grep -q "static let version = \"$VERSION\"" Sources/RonalyticCore/RonalyticInfo.swift; then
+          if ! grep -Fq "static let version = \"$VERSION\"" Sources/RonalyticCore/RonalyticInfo.swift; then
             echo "RonalyticInfo.version does not match tag $TAG" >&2
             exit 1
           fi
 
           Scripts/release-notes.sh "$VERSION" > /dev/null
 
-          if ! git branch -r --contains "$GITHUB_SHA" | grep -q "origin/main"; then
+          if ! git merge-base --is-ancestor HEAD origin/main; then
             echo "Tag $TAG is not on main" >&2
             exit 1
           fi
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-  test:
+  quality:
     needs: validate
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build and test on iOS simulator
-        run: |
-          xcodebuild test \
-            -scheme Ronalytic-Package \
-            -destination 'platform=iOS Simulator,name=iPhone 16'
+    uses: ./.github/workflows/ci.yml
 
   release:
-    needs: [validate, test]
+    needs: [validate, quality]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -66,5 +59,6 @@ jobs:
         run: |
           Scripts/release-notes.sh "${{ needs.validate.outputs.version }}" > notes.md
           gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
             --title "$GITHUB_REF_NAME" \
             --notes-file notes.md
