@@ -38,7 +38,7 @@ jobs:
       - name: Build and test on iOS simulator
         run: |
           xcodebuild test \
-            -scheme Ronalytic-Package\
+            -scheme Ronalytic-Package \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
@@ -46,11 +46,20 @@ jobs:
 
       - name: Enforce coverage threshold
         run: |
-           COV=$(xcrun xccov view --report --json TestResults.xcresult | jq '
+          set -euo pipefail
+          COV=$(xcrun xccov view --report --json TestResults.xcresult | jq -er '
             [.targets[]
               | select(.name | endswith(".xctest") | not)
               | select(.name | contains("TestSupport") | not)]
-            | (map(.coveredLines) | add) / (map(.executableLines) | add) * 100')
+            | (map(.coveredLines) | add) as $covered
+            | (map(.executableLines) | add) as $total
+            | if ($total | type) != "number" or $total <= 0 then
+                error("No executable SDK lines found in coverage report")
+              elif ($covered | type) != "number" or $covered < 0 or $covered > $total then
+                error("Invalid covered line count")
+              else
+                $covered / $total * 100
+              end')
           echo "SDK line coverage: ${COV}% (minimum ${COVERAGE_MIN}%)"
           awk -v c="$COV" -v m="$COVERAGE_MIN" 'BEGIN { exit (c+0 < m+0) }'
 
