@@ -217,6 +217,12 @@ final class HTTPTransportTests: XCTestCase {
         }
     }
 
+    func test_invalidUTF8Acknowledgement_isRetryable() {
+        let result = HTTPTransport.result(status: 200, body: Data([0xFF]), batchIDs: ["a", "b"])
+
+        XCTAssertEqual(result, DeliveryResult(delivered: [], retryable: ["a", "b"]))
+    }
+
     func test_malformedAcknowledgement_keepsEventsQueuedUntilValidAcknowledgement() async throws {
         let storage = QueueStorageFake()
         try await storage.append([.fixture(id: "a"), .fixture(id: "b")])
