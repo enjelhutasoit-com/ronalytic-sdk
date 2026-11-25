@@ -26,7 +26,7 @@ enum ClientCommand: Sendable {
 /// Owns mutable state (current user) and handles commands one at a time.
 actor EventProcessor {
     private let pipeline: Pipeline
-    private let storage: any QueueStorage
+    private let storage: BoundedQueueStorage
     private let flusher: Flusher?
     private let flushThreshold: Int
     private let logger: any SDKLogger
@@ -35,7 +35,7 @@ actor EventProcessor {
 
     init(
         pipeline: Pipeline,
-        storage: any QueueStorage,
+        storage: BoundedQueueStorage,
         flusher: Flusher?,
         flushThreshold: Int,
         logger: any SDKLogger = NoOpLogger(),
@@ -79,11 +79,13 @@ actor EventProcessor {
             return
         }
         // Call sites never throw, so a storage failure is logged instead.
-        // The metrics commit will also count it.
         do {
-            try await storage.append([processed])
-            metrics?.record { $0.eventsStored += 1 }
-            logger.log(.verbose, "stored \(processed.type.rawValue) \"\(processed.name)\" id=\(processed.id)")
+            let stored = try await storage.appendReportingStored([processed])
+            if stored > 0 {
+                logger.log(.verbose, "stored \(processed.type.rawValue) \"\(processed.name)\" id=\(processed.id)")
+            } else {
+                logger.log(.verbose, "dropped by queue capacity: id=\(processed.id)")
+            }
         } catch {
             metrics?.record { $0.storageFailures += 1 }
             logger.log(.error, "could not store \(processed.type.rawValue) \"\(processed.name)\": \(error)")

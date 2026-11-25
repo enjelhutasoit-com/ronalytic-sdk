@@ -24,12 +24,23 @@ actor BoundedQueueStorage: QueueStorage {
     }
 
     func append(_ events: [Event]) async throws {
+        _ = try await appendReportingStored(events)
+    }
+
+    /// Reports successful writes, excluding incoming events discarded by capacity policy.
+    func appendReportingStored(_ events: [Event]) async throws -> Int {
+        guard !events.isEmpty else { return 0 }
+        let stored: Int
         switch policy {
         case .dropNewest:
-            try await appendDroppingNewest(events)
+            stored = try await appendDroppingNewest(events)
         case .dropOldest:
-            try await appendDroppingOldest(events)
+            stored = try await appendDroppingOldest(events)
         }
+        if stored > 0 {
+            metrics?.record { $0.eventsStored += stored }
+        }
+        return stored
     }
 
     func peek(limit: Int) async throws -> [Event] {
@@ -44,16 +55,17 @@ actor BoundedQueueStorage: QueueStorage {
         try await base.count()
     }
 
-    private func appendDroppingNewest(_ events: [Event]) async throws {
+    private func appendDroppingNewest(_ events: [Event]) async throws -> Int {
         let stored = try await base.count()
         let free = max(capacity - stored, 0)
         let accepted = Array(events.prefix(free))
         countDropped(events.count - accepted.count)
-        guard !accepted.isEmpty else { return }
+        guard !accepted.isEmpty else { return 0 }
         try await base.append(accepted)
+        return accepted.count
     }
 
-    private func appendDroppingOldest(_ events: [Event]) async throws {
+    private func appendDroppingOldest(_ events: [Event]) async throws -> Int {
         let incoming = Array(events.suffix(capacity))
         countDropped(events.count - incoming.count)
 
@@ -65,6 +77,7 @@ actor BoundedQueueStorage: QueueStorage {
             countDropped(oldest.count)
         }
         try await base.append(incoming)
+        return incoming.count
     }
 
     private func countDropped(_ amount: Int) {

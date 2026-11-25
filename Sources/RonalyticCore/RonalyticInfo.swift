@@ -4,5 +4,5 @@
 
 public enum RonalyticInfo {
     /// Current SDK version (SemVer). Bumped at release time.
-    public static let version = "1.0.0"
+    public static let version = "1.0.1"
 }

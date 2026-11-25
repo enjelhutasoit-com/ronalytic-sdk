@@ -96,6 +96,27 @@ final class BoundedQueueStorageTests: XCTestCase {
         let snapshot = metrics.snapshot()
 
         XCTAssertEqual(snapshot.eventsDroppedByQueue, 2)
+        XCTAssertEqual(snapshot.eventsStored, 2)
+    }
+
+    func test_partialAppend_reportsOnlyAcceptedEvents() async throws {
+        let metrics = MetricsRecorder()
+        let queue = BoundedQueueStorage(
+            base: QueueStorageFake(),
+            capacity: 2,
+            policy: .dropNewest,
+            metrics: metrics
+        )
+        try await queue.append([.fixture(id: "a")])
+
+        let stored = try await queue.appendReportingStored([.fixture(id: "b"), .fixture(id: "c")])
+        let snapshot = metrics.snapshot()
+        let ids = try await storedIDs(queue)
+
+        XCTAssertEqual(stored, 1)
+        XCTAssertEqual(snapshot.eventsStored, 2)
+        XCTAssertEqual(snapshot.eventsDroppedByQueue, 1)
+        XCTAssertEqual(ids, ["a", "b"])
     }
 
     // MARK: - Helper

@@ -7,7 +7,8 @@ import Foundation
 /// A photo of the SDK's own counters at one moment.
 /// Counters start at zero when the SDK starts and live in memory only.
 public struct MetricsSnapshot: Sendable, Equatable {
-    /// Events handed to the storage. Includes events the full queue then dropped.
+    /// Events successfully appended to storage during this SDK session.
+    /// Excludes incoming events discarded before writing; later evictions do not decrement it.
     public internal(set) var eventsStored = 0
     /// Dropped by a plugin: filters, sampling, the consent gate.
     public internal(set) var eventsDroppedByPlugin = 0
