@@ -130,9 +130,9 @@ private struct ResponseReport: Decodable {
             return !reportKeys.isDisjoint(with: object.keys)
         }
 
-        let text = String(decoding: body, as: UTF8.self)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.hasPrefix("{") || text.hasPrefix("[")
+        guard let text = String(bytes: body, encoding: .utf8) else { return true }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.hasPrefix("{") || trimmed.hasPrefix("[")
     }
 
     /// The most cautious group wins: retryable, then rejected, then delivered.
