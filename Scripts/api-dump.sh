@@ -21,12 +21,20 @@ TARGET=$(swift -print-target-info | jq -er '.target.triple | strings | select(le
 SDK_ARGS=()
 if [[ "$(uname -s)" == Darwin ]]; then
   SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
-  SDK_ARGS=(-sdk "$SDK_PATH")
+  PLATFORM_PATH=$(xcrun --sdk macosx --show-sdk-platform-path)
+  FRAMEWORKS_PATH="$PLATFORM_PATH/Developer/Library/Frameworks"
+  # XCTest is an Xcode developer framework, not part of the macOS SDK.
+  if [[ ! -d "$FRAMEWORKS_PATH/XCTest.framework" ]]; then
+    echo "XCTest.framework not found in $FRAMEWORKS_PATH; select a full Xcode installation" >&2
+    exit 1
+  fi
+  SDK_ARGS=(-sdk "$SDK_PATH" -F "$FRAMEWORKS_PATH")
 fi
 
 for module in "${MODULES[@]}"; do
   GRAPH_DIR="$WORK/$module"
   mkdir -p "$GRAPH_DIR"
+  echo "Extracting public API for $module" >&2
   # Match SwiftPM's symbol graph settings but scope extraction to one module.
   swift symbolgraph-extract \
     -module-name "$module" \
