@@ -36,7 +36,7 @@ Call sites never block and never throw.
 Swift Package Manager:
 
 ```swift
-.package(url: "https://github.com/enjelhutasoit-com/ronalytic-sdk", from: "1.0.0")
+.package(url: "https://github.com/enjelhutasoit-com/ronalytic-sdk", from: "1.0.1")
 ```
 
 | Product | Use it for |
@@ -53,7 +53,7 @@ Swift Package Manager:
 - Plugin pipeline: enrichers, filters and destinations run in order
 - Persistent, ordered, bounded queue with a drop policy
 - Batching by size and interval, retry with exponential backoff and jitter
-- At-least-once delivery with per-event partial failure handling
+- At-least-once retry semantics for retained events, with per-event partial failure handling
 - Context (device, app, OS, locale, network) and session tracking
 - Consent gate, opt-out and PII redaction rules
 - Console destination and verbose debug logging
@@ -73,12 +73,14 @@ module, and `Ronalytic` combines them.
 *Why:* app extensions cannot use `UIApplication.shared`, and pure Foundation code
 tests in seconds on macOS. *Cost:* an extra module and an umbrella.
 
-**At-least-once, not exactly-once.** Events are peeked, sent, and removed only
-after confirmation. Every event has a stable ID.
-*Why:* a client cannot know whether the server received a batch when the
-connection drops, so losing data is the only unacceptable outcome. The server can
-drop duplicates by ID. *Cost:* duplicates are possible. See the delivery
-guarantees article in the documentation.
+**At-least-once retry semantics, not exactly-once.** Retained events are
+peeked and sent; acknowledged or permanently rejected events are removed.
+Every event has a stable ID.
+*Why:* when a connection drops, the client cannot know whether the server
+accepted a batch. Retrying retained events reduces loss; the server can drop
+duplicates by ID. *Cost:* duplicates are possible, and queue eviction, storage
+failure or permanent rejection can prevent delivery. See the delivery guarantees
+article in the documentation.
 
 **Per-event results, not per-batch.** `Transport` returns delivered, retryable
 and rejected groups. Events the server does not mention are retried.
@@ -121,13 +123,14 @@ opt in to redaction rules and to tracking while consent is unknown.
 
 ## Known limitations
 
-- Delivery is at-least-once. Server-side dedup by event ID is needed for
-  exactly-once effects.
+- Delivery is conditional on queue retention, storage health and backend recovery.
+  Server-side dedup by event ID is needed to avoid duplicate processing.
 - Extensions write only. They do not upload.
 - Two processes using the same writer ID at once can interleave lines. Use a
   different fixed writer ID per process.
 - PII redaction is regex based. It does not detect names or addresses.
-- Metrics live in memory and reset when the app restarts.
+- Metrics live in memory and reset when the app restarts. `eventsStored` counts
+  successful appends, not queue depth. Subsequent evictions do not decrement it.
 - Background time can run out while a retry is waiting. Events stay on disk and
   are sent later.
 - UIKit-only API is not covered by the automated API check, because it runs on
